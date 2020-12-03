@@ -1,6 +1,6 @@
 # Alef Component
 
-Alef Component for Modern Web Apps, it's inspired by **React** and **Svelte**, base on **TSX**.
+Alef Component for Modern Web Apps, it's inspired by **React** and **Svelte** and based on **TSX**.
 
 - Born in Typescript
 - With Standard JSX Syntax
@@ -14,22 +14,22 @@ Alef Component for Modern Web Apps, it's inspired by **React** and **Svelte**, b
 
 ## Draft
 
-- stage 1
+- Stage 1
   - **nodes rendering**: render nodes using native DOM
   - **events**: handle events to update view
   - **memo**: reactive state
   - **effect**: reactive function
-- stage 2
+- Stage 2
   - **styling**: transform inline CSS with scope
   - **import alef component** - `import Logo from "Logo.alef"`
   - **slots** - `<Logo><img ... /></Logo>`
   - **reuse pattern** - reuse common logics
   - **stores** - share state in global
-- stage 3
+- Stage 3
   - **SSR** - server side rendering
   - **CSS preprocess** - support **less**, **sass**, ...
-  - **tooling** - IDE support, documentation, ...
+  - **tooling** - client command, IDE support, documentation, ...
 
 ## Status
 
-Drafting the draft
+Drafting the draft.
