@@ -30,7 +30,7 @@ Alef Component for Modern Web Apps, it's inspired by **React** and **Svelte** an
   - **CSS preprocess** - support **less**, **sass**, ...
   - **tooling** - client command, IDE support, documentation, ...
 
-## Run Draft
+### Run Draft
 
 ```bash
 npx serve DRAFT
