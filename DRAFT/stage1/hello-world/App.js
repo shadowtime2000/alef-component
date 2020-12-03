@@ -1,11 +1,20 @@
 /* --- alef helper code --- */
 
-function append(parent, child) {
-    parent.appendChild(child)
-}
-
-function remove(parent, child) {
-    parent.removeChild(child)
+class Component {
+    el = null
+    disposes = []
+    nodes = []
+    
+    mount(el) {
+        this.el = el
+        this.nodes.forEach(node => append(el, node))
+    }
+    unmount() {
+        this.disposes.forEach(dispose => dispose())
+        if (this.el) {
+            this.nodes.forEach(node => remove(this.el, node))
+        }
+    }
 }
 
 function Element(name, parent) {
@@ -24,25 +33,25 @@ function Text(text, parent) {
     return node
 }
 
+function append(parent, child) {
+    parent.appendChild(child)
+}
+
+function remove(parent, child) {
+    parent.removeChild(child)
+}
+
 /* --- END --- */
 
-export default class App {
+export default class App extends Component{
     constructor() {
+        super()
+
         let name = 'world'
 
         const p = Element('p')
         const t = Text(`hello ${name}!`, p)
         
         this.nodes = [p]
-    }
-    mount(el) {
-        this.el = el
-        this.nodes.forEach(node => append(el, node))
-    }
-    unmount() {
-        this.disposes.forEach(dispose => dispose())
-        if (this.el) {
-            this.nodes.forEach(node => remove(this.el, node))
-        }
     }
 }

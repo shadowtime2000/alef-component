@@ -1,11 +1,20 @@
 /* --- alef helper code --- */
 
-function append(parent, child) {
-    parent.appendChild(child)
-}
-
-function remove(parent, child) {
-    parent.removeChild(child)
+class Component {
+    el = null
+    disposes = []
+    nodes = []
+    
+    mount(el) {
+        this.el = el
+        this.nodes.forEach(node => append(el, node))
+    }
+    unmount() {
+        this.disposes.forEach(dispose => dispose())
+        if (this.el) {
+            this.nodes.forEach(node => remove(this.el, node))
+        }
+    }
 }
 
 function Element(name, parent) {
@@ -24,6 +33,14 @@ function Text(text, parent) {
     return node
 }
 
+function append(parent, child) {
+    parent.appendChild(child)
+}
+
+function remove(parent, child) {
+    parent.removeChild(child)
+}
+
 function setTextContent(node, text) {
     node.textContent = String(text)
 }
@@ -39,8 +56,10 @@ function listen(el, evName, callback, update) {
 
 /* --- END --- */
 
-export default class App {
+export default class App extends Component {
     constructor() {
+        super()
+
         let n = 0
 
         const handler = () => {
@@ -69,15 +88,5 @@ export default class App {
                 setTextContent(t2, n)
             })
         ]
-    }
-    mount(el) {
-        this.el = el
-        this.nodes.forEach(node => append(el, node))
-    }
-    unmount() {
-        this.disposes.forEach(dispose => dispose())
-        if (this.el) {
-            this.nodes.forEach(node => remove(this.el, node))
-        }
-    }
+    } 
 }
