@@ -15,17 +15,23 @@ Alef Component for Modern Web Apps, it's inspired by **React** and **Svelte**, b
 ## Draft
 
 - stage 1
-  - nodes render
-  - events
-  - memo
-  - effect
+  - **nodes rendering**: render nodes using native DOM
+  - **events**: handle events to update view
+  - **memo**: reactive memo
+  - **effect**: reactive effect
 - stage 2
-  - styling
-  - import alef component
-  - slots
-  - reuse pattern
-  - stores
+  - **styling**: transform inline CSS with scope
+  - **import alef component** - `import Logo from "Logo.alef"`
+  - **slots** - `<Logo><img ... /></Logo>`
+  - **reuse pattern** - reuse common logics
+  - **stores** - share state in global
 - stage 3
-  - SSR
-  - tooling
+  - **SSR** - server side rendering
+  - **CSS preprocess** - support **lesss**, **sass**...
+  - **tooling** - IDE support, documentation, ...
+
+
+  ## Status
+
+  **Drafting the draft**
   
