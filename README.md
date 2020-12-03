@@ -16,14 +16,16 @@ Alef Component for Modern Web Apps, it's inspired by **React** and **Svelte**, b
 
 - stage 1
   - nodes render
-  - event
+  - events
   - memo
   - effect
-  - form binding
 - stage 2
+  - styling
   - import alef component
+  - slots
   - reuse pattern
   - stores
 - stage 3
-  - styling
   - SSR
+  - tooling
+  
