@@ -2,17 +2,17 @@
 
 class Component {
   el = null
-  disposes = []
   nodes = []
+  disposes = []
   mount(el) {
     this.el = el
     this.nodes.forEach(node => append(el, node))
   }
   unmount() {
-    this.disposes.forEach(dispose => dispose())
     if (this.el) {
       this.nodes.forEach(node => remove(this.el, node))
     }
+    this.disposes.forEach(dispose => dispose())
   }
 }
 
