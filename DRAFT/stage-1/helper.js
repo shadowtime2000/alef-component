@@ -16,7 +16,7 @@ export class Component {
   }
 }
 
-export function Element(name, parent, props) {
+export function Element(name, props, parent) {
   const el = document.createElement(name)
   if (parent) {
     append(parent, el)
@@ -43,6 +43,10 @@ export function space() {
 
 export function setText(node, text) {
   node.textContent = String(text)
+}
+
+export function setValue(node, text) {
+  node.value = String(text)
 }
 
 export function listen(el, evName, callback, update) {

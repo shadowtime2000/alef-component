@@ -8,6 +8,6 @@ function reset() {
 	name = 'World'
 }
 
+<p>Hello {name}!<p>;
 <input value={name} onChange={onChange} />;
-<p>Welcome {name}<p>;
-<button onClick={reset}>reset<button>;
+<button onClick={reset}>Reset<button>;

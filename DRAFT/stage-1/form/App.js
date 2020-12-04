@@ -3,6 +3,7 @@ import {
   Element,
   listen,
   setText,
+  setValue,
   space,
   Text
 } from '../helper.js'
@@ -15,15 +16,15 @@ export default class App extends Component {
     let name = 'World'
 
     // create nodes
-    let input = Element('input', null, { value: name })
-    let s = space()
     let p = Element('p')
     let t = Text('Hello ', p)
     let t2 = Text(name, p)
     let t3 = Text('!', p)
+    let s = space()
+    let input = Element('input', { value: name })
     let s2 = space()
     let button = Element('button')
-    let t4 = Text('reset', button)
+    let t4 = Text('Reset', button)
 
     // event handles
     function onChange(e) {
@@ -34,16 +35,16 @@ export default class App extends Component {
     }
 
     // register nodes
-    this.nodes = [input, s, p, s2, button]
+    this.nodes = [p, s, input, s2, button]
 
     // listen events
     this.disposes = [
       listen(input, 'input', onChange, () => {
-        setText(t2, name) // <- name
+        setText(t2, name)
       }),
       listen(button, 'click', reset, () => {
         setText(t2, name) // <- name
-        input.value = name // <- name
+        setValue(input, name) // <- name
       })
     ]
   }
