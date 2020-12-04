@@ -1,0 +1,13 @@
+let name: string = 'World'
+
+function onChange(e) {
+	name = e.target.value
+}
+
+function reset() {
+	name = 'World'
+}
+
+<input value={name} onChange={onChange} />;
+<p>Welcome {name}<p>;
+<button onClick={reset}>reset<button>;

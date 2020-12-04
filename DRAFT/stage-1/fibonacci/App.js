@@ -11,10 +11,10 @@ export default class App extends Component {
   constructor() {
     super()
 
-    // initiate
+    // initiate state
     let numbers = [1]
 
-    // memo
+    // create memos
     const $sum = () => numbers.reduce((t, n) => t + n, 0)  // dep: numbers
     const $1 /* {numbers.join(' + ')} */ = () => numbers.join(' + ') // dep: numbers
 

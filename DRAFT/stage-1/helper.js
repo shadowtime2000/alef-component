@@ -16,10 +16,15 @@ export class Component {
   }
 }
 
-export function Element(name, parent) {
+export function Element(name, parent, props) {
   const el = document.createElement(name)
   if (parent) {
     append(parent, el)
+  }
+  if (typeof props === 'object' || props !== null) {
+    for (const key in props) {
+      el.setAttribute(key, String(props[key]))
+    }
   }
   return el
 }
@@ -41,8 +46,8 @@ export function setText(node, text) {
 }
 
 export function listen(el, evName, callback, update) {
-  const cb = () => {
-    callback()
+  const cb = e => {
+    callback(e)
     update()
   }
   el.addEventListener(evName, cb)
