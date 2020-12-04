@@ -11,7 +11,34 @@ export class Component {
   unmount() {
     this.disposes.forEach(dispose => dispose())
     if (this.el) {
-      this.nodes.forEach(node => remove(this.el, node))
+      this.nodes.forEach(node => {
+        if (node instanceof IfBlock) {
+          node.disposes.forEach(dispose => dispose())
+        }
+        remove(this.el, node)
+      })
+    }
+  }
+}
+
+export class IfBlock {
+  nodes = []
+  check = () => false
+  disposes = []
+  placeholder = document.createComment('if-block')
+  constructor(check, nodes, disposes = []) {
+    this.check = check
+    this.nodes = nodes
+    this.disposes = disposes
+  }
+  toggle() {
+    const { parentNode } = this.placeholder
+    if (parentNode) {
+      if (this.check()) {
+        this.nodes.forEach(node => parentNode.insertBefore(node, this.placeholder))
+      } else {
+        this.nodes.forEach(node => remove(parentNode, node))
+      }
     }
   }
 }
@@ -59,9 +86,21 @@ export function listen(el, evName, callback, update) {
 }
 
 export function append(parent, child) {
-  parent.appendChild(child)
+  if (child instanceof IfBlock) {
+    parent.appendChild(child.placeholder)
+    child.toggle(child.check())
+  } else {
+    parent.appendChild(child)
+  }
 }
 
 export function remove(parent, child) {
-  parent.removeChild(child)
+  if (child instanceof IfBlock) {
+    child.nodes.forEach(node => parent.remove(node))
+    parent.removeChild(child.placeholder)
+  } else {
+    if (child.parentNode === parent) {
+      parent.removeChild(child)
+    }
+  }
 }

@@ -40,7 +40,7 @@ export default class App extends Component {
     // listen events
     this.disposes = [
       listen(input, 'input', onChange, () => {
-        setText(t2, name)
+        setText(t2, name) // <- name
       }),
       listen(button, 'click', reset, () => {
         setText(t2, name) // <- name
