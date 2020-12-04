@@ -16,6 +16,7 @@ Alef Component for Modern Web Apps, it's inspired by **React** and **Svelte** an
 
 - Stage 1
   - **nodes rendering**: render nodes using native DOM
+  - **conditional rendering**：...if...else...
   - **events**: handle events to update view
   - **memo**: reactive state
   - **effect**: reactive function
