@@ -1,4 +1,4 @@
-let n = 0
+let n:number = 0
 
 <p>current count is {n}</p>;
 <button onClick={() => { n-- }}>-<button>;

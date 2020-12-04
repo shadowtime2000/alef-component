@@ -32,15 +32,11 @@ export function Text(text, parent) {
   return node
 }
 
-function append(parent, child) {
-  parent.appendChild(child)
+export function space() {
+  return Text(' ')
 }
 
-function remove(parent, child) {
-  parent.removeChild(child)
-}
-
-export function setTextContent(node, text) {
+export function setText(node, text) {
   node.textContent = String(text)
 }
 
@@ -51,4 +47,12 @@ export function listen(el, evName, callback, update) {
   }
   el.addEventListener(evName, cb)
   return () => el.removeEventListener(evName, cb)
+}
+
+export function append(parent, child) {
+  parent.appendChild(child)
+}
+
+export function remove(parent, child) {
+  parent.removeChild(child)
 }
