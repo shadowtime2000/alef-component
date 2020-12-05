@@ -134,15 +134,14 @@ export function removeChild(parent, child) {
   }
 }
 
-const idTable = '0123456789abcdefghijklmnopqrstuvwxyz'
+const idTable = '1234567890abcdefghijklmnopqrstuvwxyz'
 const idLen = 6
 
 /** Create and return a style unique ID */
 export function StyleId() {
-  const tableLen = idTable.length
-  let id = ''
-  for (let i = 0; i < idLen; i++) {
-    id += idTable.charAt(Math.floor(tableLen * Math.random()))
+  let id = idTable.slice(10).charAt(Math.floor(26 * Math.random())) // starts with a-z
+  for (let i = 0; i < idLen - 1; i++) {
+    id += idTable.charAt(Math.floor(36 * Math.random()))
   }
   return id
 }
