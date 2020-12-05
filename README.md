@@ -22,12 +22,12 @@ let n: number = 0 // state
 $: double = 2 * n
 $: message = `Hello ${name}!`
 
-// eq `useEffect(()=>{}, [n])`
+// eq `useEffect(() => {}, [n])`
 $: () => {
-  console.log(`current n is ${n}.`)
+  console.log(`current count is ${n}`)
 }
 
-// eq `useEffect(()=>{}, [])`
+// eq `useEffect(() => {}, [])`
 $: () => {
   console.log('mounted')
   return () => {
@@ -47,7 +47,7 @@ $t: <p onClick={onClick}>Counter: {double}</p>
 
 // styling
 $style: `
-  /* unused h1, tree-shaking to remove it */
+  /* unused h1 (tree-shaking) */
   h1 {
     font-size: 200%;
   }
