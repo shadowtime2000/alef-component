@@ -29,7 +29,6 @@ export default class App extends Component {
     const _1 /* button[0].onClick */ = () => {
       n-- // dirty data: n
     }
-    // 
     const _2 /* button[1].onClick */ = () => {
       n++ // dirty data: n
     }
