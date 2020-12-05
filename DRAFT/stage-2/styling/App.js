@@ -3,8 +3,9 @@ import {
   Element,
   listen,
   setText,
-  space, 
+  space,
   Style,
+  StyleId,
   Text
 } from '../../helper.js'
 
@@ -12,21 +13,24 @@ export default class App extends Component {
   constructor() {
     super()
 
+    // create style ids
+    const sid = StyleId() // todo(stage-3): get ssr id
+
     // initiate state
     let n = 0
 
     // create nodes
-    let p = Element('p', { class: 'hkf3qt' })
+    let p = Element('p', { class: sid })
     let t = Text('current count is ', p)
     let t2 = Text(n, p)
     let s = space()
-    let button = Element('button', { class: 'hkf3qt' })
+    let button = Element('button', { class: sid })
     let t3 = Text('-', button)
     let s2 = space()
-    let button2 = Element('button', { class: 'hkf3qt' })
+    let button2 = Element('button', { class: sid })
     let t4 = Text('+', button2)
 
-    let $style = new Style('hkf3qt', id => `
+    let $style = new Style(sid, id => `
 /* unused h1 */
 /*
   h1 {
@@ -54,7 +58,7 @@ button.${id} {
     }
 
     // register nodes
-    this.nodes = [p, s, button, s2, button2, $style]
+    this.nodes = [$style, p, s, button, s2, button2]
 
     // listen events
     this.disposes = [

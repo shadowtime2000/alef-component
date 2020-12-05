@@ -127,9 +127,22 @@ export function listen(el, evName, callback, update) {
   return () => el.removeEventListener(evName, cb)
 }
 
-/** Remove the child from it's parent */
+/** Remove the child from its parent */
 export function removeChild(parent, child) {
   if (child.parentNode === parent) {
     parent.removeChild(child)
   }
+}
+
+const idTable = '0123456789abcdefghijklmnopqrstuvwxyz'
+const idLen = 6
+
+/** Create and return a style unique ID */
+export function StyleId() {
+  const tableLen = idTable.length
+  let id = ''
+  for (let i = 0; i < idLen; i++) {
+    id += idTable.charAt(Math.floor(tableLen * Math.random()))
+  }
+  return id
 }
