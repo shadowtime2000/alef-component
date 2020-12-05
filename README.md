@@ -59,13 +59,15 @@ $style: `
 
 ## Draft
 
+The draft will be parted in three stages, currently accept any suggestions about it. After the DRAFT is locked, the **AOT** comilper in Rust will be implemented to make it works in nodejs and Deno.
+
 - Stage 1
   - **nodes rendering**: render nodes using native DOM
   - **conditional rendering**：...if...else...
   - **loop rendering**：render list
   - **events**: handle events to update view
   - **memo**: use computed states
-  - **side effect**: react(apply side effect) for state changing
+  - **side effect**: react for state changing
 - Stage 2
   - **styling**: transform inline CSS with scope
   - **import alef component** - `import Logo from "Logo.alef"`
@@ -73,9 +75,9 @@ $style: `
   - **reuse pattern** - reuse common logics
   - **stores** - share state in global
 - Stage 3
-  - **SSR** - server side rendering
-  - **CSS preprocess** - support **less**, **sass**, ...
-  - **tooling** - client command, IDE support, documentation, ...
+  - **SSR** - server side rendering 
+  - **suspense** - suspense for data fetching
+  - **tooling** - documentation, webpack/rullup loader, IDE support, ...
 
 ### Run Draft
 
