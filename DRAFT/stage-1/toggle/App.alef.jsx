@@ -1,4 +1,4 @@
-let ok = false;
+let ok = false
 
 function toggle() {
   ok = !ok

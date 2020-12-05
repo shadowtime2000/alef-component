@@ -1,4 +1,4 @@
-let name = 'World';
+let name = 'World'
 
 function onChange(e) {
 	name = e.target.value
