@@ -5,9 +5,10 @@ export class Component {
   el = null
   nodes = []
   disposes = []
+  styles = []
   mount(el) {
     this.el = el
-    this.nodes.forEach(node => append(el, node))
+    this.nodes.forEach(node => this._append(node))
   }
   unmount() {
     this.disposes.forEach(dispose => dispose())
@@ -16,9 +17,43 @@ export class Component {
         if (node instanceof IfBlock) {
           node.disposes.forEach(dispose => dispose())
         }
-        remove(this.el, node)
+        this._remove(node)
       })
     }
+  }
+  _append(child) {
+    if (child instanceof IfBlock) {
+      this.el.appendChild(child.placeholder)
+      child.toggle()
+    } else if (child instanceof Style) {
+      document.head.appendChild(child.el)
+      child.update()
+    } else {
+      this.el.appendChild(child)
+    }
+  }
+  _remove(child) {
+    if (child instanceof IfBlock) {
+      child.nodes.forEach(node => removeChild(this.el, node))
+      removeChild(this.el, child.placeholder)
+    } else if (child instanceof Style) {
+      removeChild(document.head, child.el)
+    } else {
+      removeChild(this.el, child)
+    }
+  }
+}
+
+/** A style component apply style */
+export class Style {
+  el = document.createElement('style')
+  constructor(id, templateFn) {
+    this.id = id
+    this.templateFn = templateFn
+    this.el.setAttribute('id', 'alef-' + id)
+  }
+  update() {
+    this.el.innerHTML = this.templateFn(this.id)
   }
 }
 
@@ -38,7 +73,7 @@ export class IfBlock {
       if (this.validate()) {
         this.nodes.forEach(node => parentNode.insertBefore(node, this.placeholder))
       } else {
-        this.nodes.forEach(node => remove(parentNode, node))
+        this.nodes.forEach(node => removeChild(parentNode, node))
       }
     }
   }
@@ -48,7 +83,7 @@ export class IfBlock {
 export function Element(name, props, parent) {
   const el = document.createElement(name)
   if (parent) {
-    append(parent, el)
+    parent.appendChild(el)
   }
   if (typeof props === 'object' || props !== null) {
     for (const key in props) {
@@ -60,11 +95,11 @@ export function Element(name, props, parent) {
 
 /** Create a Text node */
 export function Text(text, parent) {
-  const node = document.createTextNode(String(text))
+  const tn = document.createTextNode(String(text))
   if (parent) {
-    append(parent, node)
+    parent.appendChild(tn)
   }
-  return node
+  return tn
 }
 
 /** A shortcut for `Text(' ')` */
@@ -92,24 +127,9 @@ export function listen(el, evName, callback, update) {
   return () => el.removeEventListener(evName, cb)
 }
 
-/** Append the child node to the parent */
-export function append(parent, child) {
-  if (child instanceof IfBlock) {
-    parent.appendChild(child.placeholder)
-    child.toggle(child.validate())
-  } else {
-    parent.appendChild(child)
-  }
-}
-
-/** Remove the child from it's parent */ 
-export function remove(parent, child) {
-  if (child instanceof IfBlock) {
-    child.nodes.forEach(node => parent.removeChild(node))
-    parent.removeChild(child.placeholder)
-  } else {
-    if (child.parentNode === parent) {
-      parent.removeChild(child)
-    }
+/** Remove the child from it's parent */
+export function removeChild(parent, child) {
+  if (child.parentNode === parent) {
+    parent.removeChild(child)
   }
 }

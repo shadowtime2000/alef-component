@@ -5,7 +5,7 @@ import {
   setText,
   space,
   Text
-} from '../helper.js'
+} from '../../helper.js'
 
 export default class App extends Component {
   constructor() {

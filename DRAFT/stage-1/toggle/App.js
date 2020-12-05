@@ -4,7 +4,7 @@ import {
   listen,
   Text,
   IfBlock,
-} from '../helper.js'
+} from '../../helper.js'
 
 export default class App extends Component {
   constructor() {
