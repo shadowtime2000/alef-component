@@ -119,10 +119,10 @@ export function setValue(el, text) {
 }
 
 /** Listen event for the element. */
-export function listen(el, evName, callback, update) {
+export function listen(el, evName, callback, ...updates) {
   const cb = e => {
     callback(e)
-    update()
+    updates.forEach(update => update())
   }
   el.addEventListener(evName, cb)
   return () => el.removeEventListener(evName, cb)
