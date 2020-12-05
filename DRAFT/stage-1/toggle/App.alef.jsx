@@ -1,8 +1,11 @@
 let ok = false;
 
 function toggle() {
-	ok = !ok
+  ok = !ok
 }
 
-!ok && <button onClick={toggle}>OFF</button>;
-ok && <button onClick={toggle}>ON</button>;
+$t: if (ok) {
+  <button onClick={toggle}>OFF</button>
+} else {
+  <button onClick={toggle}>ON</button>
+}
