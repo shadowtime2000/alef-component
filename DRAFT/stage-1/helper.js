@@ -1,5 +1,6 @@
 /* alef component helpers */
 
+/** Alef basic component class */
 export class Component {
   el = null
   nodes = []
@@ -21,20 +22,20 @@ export class Component {
   }
 }
 
+/** A block component to handle conditional rendering */
 export class IfBlock {
-  nodes = []
-  check = () => false
-  disposes = []
   placeholder = document.createComment('if-block')
-  constructor(check, nodes, disposes = []) {
-    this.check = check
-    this.nodes = nodes
-    this.disposes = disposes
+  validate = () => false
+  nodes = []
+  disposes = []
+  constructor(validate, init) {
+    this.validate = validate
+    init(this)
   }
   toggle() {
     const { parentNode } = this.placeholder
     if (parentNode) {
-      if (this.check()) {
+      if (this.validate()) {
         this.nodes.forEach(node => parentNode.insertBefore(node, this.placeholder))
       } else {
         this.nodes.forEach(node => remove(parentNode, node))
@@ -43,6 +44,7 @@ export class IfBlock {
   }
 }
 
+/** Create a document element */
 export function Element(name, props, parent) {
   const el = document.createElement(name)
   if (parent) {
@@ -56,6 +58,7 @@ export function Element(name, props, parent) {
   return el
 }
 
+/** Create a Text node */
 export function Text(text, parent) {
   const node = document.createTextNode(String(text))
   if (parent) {
@@ -64,18 +67,22 @@ export function Text(text, parent) {
   return node
 }
 
+/** A shortcut for `Text(' ')` */
 export function space() {
   return Text(' ')
 }
 
+/** Set the text content of Text node */
 export function setText(node, text) {
   node.textContent = String(text)
 }
 
+/** Set the value of the form Element */
 export function setValue(node, text) {
   node.value = String(text)
 }
 
+/** Listen an event for the element */
 export function listen(el, evName, callback, update) {
   const cb = e => {
     callback(e)
@@ -85,18 +92,20 @@ export function listen(el, evName, callback, update) {
   return () => el.removeEventListener(evName, cb)
 }
 
+/** Append the child node to the parent */
 export function append(parent, child) {
   if (child instanceof IfBlock) {
     parent.appendChild(child.placeholder)
-    child.toggle(child.check())
+    child.toggle(child.validate())
   } else {
     parent.appendChild(child)
   }
 }
 
+/** Remove the child from it's parent */ 
 export function remove(parent, child) {
   if (child instanceof IfBlock) {
-    child.nodes.forEach(node => parent.remove(node))
+    child.nodes.forEach(node => parent.removeChild(node))
     parent.removeChild(child.placeholder)
   } else {
     if (child.parentNode === parent) {
