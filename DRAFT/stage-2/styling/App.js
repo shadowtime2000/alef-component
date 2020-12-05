@@ -30,7 +30,7 @@ export default class App extends Component {
     let button2 = Element('button', { class: sid })
     let t4 = Text('+', button2)
 
-    let $style = new Style(sid, id => `
+    let style = new Style(sid, id => `
 /* unused h1 */
 /*
   h1 {
@@ -57,7 +57,7 @@ button.${id} {
     }
 
     // register nodes
-    this.nodes = [$style, p, s, button, s2, button2]
+    this.nodes = [style, p, s, button, s2, button2]
 
     // listen events
     this.disposes = [

@@ -1,11 +1,9 @@
 /* Alef Component Helpers */
 
-/** Alef basic component class */
+/** Alef basic component class. */
 export class Component {
-  el = null
   nodes = []
   disposes = []
-  styles = []
   mount(el) {
     this.el = el
     this.nodes.forEach(node => this._append(node))
@@ -22,29 +20,35 @@ export class Component {
     }
   }
   _append(child) {
-    if (child instanceof IfBlock) {
-      this.el.appendChild(child.placeholder)
-      child.toggle()
-    } else if (child instanceof Style) {
-      document.head.appendChild(child.el)
-      child.update()
-    } else {
-      this.el.appendChild(child)
+    const { el } = this
+    if (el) {
+      if (child instanceof IfBlock) {
+        el.appendChild(child.placeholder)
+        child.toggle()
+      } else if (child instanceof Style) {
+        document.head.appendChild(child.el)
+        child.update()
+      } else {
+        el.appendChild(child)
+      }
     }
   }
   _remove(child) {
-    if (child instanceof IfBlock) {
-      child.nodes.forEach(node => removeChild(this.el, node))
-      removeChild(this.el, child.placeholder)
-    } else if (child instanceof Style) {
-      removeChild(document.head, child.el)
-    } else {
-      removeChild(this.el, child)
+    const { el } = this
+    if (el) {
+      if (child instanceof IfBlock) {
+        child.nodes.forEach(node => removeChild(el, node))
+        removeChild(el, child.placeholder)
+      } else if (child instanceof Style) {
+        removeChild(document.head, child.el)
+      } else {
+        removeChild(el, child)
+      }
     }
   }
 }
 
-/** A style component to apply style */
+/** A style component to apply style. */
 export class Style {
   el = document.createElement('style')
   constructor(id, templateFn) {
@@ -57,7 +61,7 @@ export class Style {
   }
 }
 
-/** A block component to handle conditional rendering */
+/** A block component to handle conditional rendering. */
 export class IfBlock {
   placeholder = document.createComment('if-block')
   nodes = []
@@ -78,7 +82,7 @@ export class IfBlock {
   }
 }
 
-/** Create and return a document element */
+/** Create and return a document element. */
 export function Element(name, props, parent) {
   const el = document.createElement(name)
   if (parent) {
@@ -92,7 +96,7 @@ export function Element(name, props, parent) {
   return el
 }
 
-/** Create and return a Text node */
+/** Create and return a Text node. */
 export function Text(text, parent) {
   const tn = document.createTextNode(String(text))
   if (parent) {
@@ -101,22 +105,22 @@ export function Text(text, parent) {
   return tn
 }
 
-/** A shortcut for `Text(' ')` */
+/** A shortcut for `Text(' ')`. */
 export function space() {
   return Text(' ')
 }
 
-/** Set text content of the Text node */
+/** Set text content of the Text node. */
 export function setText(node, text) {
   node.textContent = String(text)
 }
 
-/** Set value of the form Element */
+/** Set value of the form Element. */
 export function setValue(el, text) {
   el.value = String(text)
 }
 
-/** Listen event for the element */
+/** Listen event for the element. */
 export function listen(el, evName, callback, update) {
   const cb = e => {
     callback(e)
@@ -126,7 +130,7 @@ export function listen(el, evName, callback, update) {
   return () => el.removeEventListener(evName, cb)
 }
 
-/** Remove the child from its parent */
+/** Remove the child from its parent. */
 export function removeChild(parent, child) {
   if (child.parentNode === parent) {
     parent.removeChild(child)
@@ -136,7 +140,7 @@ export function removeChild(parent, child) {
 const idTable = '1234567890abcdefghijklmnopqrstuvwxyz'
 const idLen = 6
 
-/** Create and return a style unique ID */
+/** Create and return a style unique ID. */
 export function StyleId() {
   let id = idTable.slice(10).charAt(Math.floor(26 * Math.random())) // starts with a-z
   for (let i = 0; i < idLen - 1; i++) {
