@@ -1,4 +1,4 @@
-/* alef component helpers */
+/* Alef Component Helpers */
 
 /** Alef basic component class */
 export class Component {
@@ -44,7 +44,7 @@ export class Component {
   }
 }
 
-/** A style component apply style */
+/** A style component to apply style */
 export class Style {
   el = document.createElement('style')
   constructor(id, templateFn) {
@@ -60,7 +60,6 @@ export class Style {
 /** A block component to handle conditional rendering */
 export class IfBlock {
   placeholder = document.createComment('if-block')
-  validate = () => false
   nodes = []
   disposes = []
   constructor(validate, init) {
@@ -79,7 +78,7 @@ export class IfBlock {
   }
 }
 
-/** Create a document element */
+/** Create and return a document element */
 export function Element(name, props, parent) {
   const el = document.createElement(name)
   if (parent) {
@@ -93,7 +92,7 @@ export function Element(name, props, parent) {
   return el
 }
 
-/** Create a Text node */
+/** Create and return a Text node */
 export function Text(text, parent) {
   const tn = document.createTextNode(String(text))
   if (parent) {
@@ -107,17 +106,17 @@ export function space() {
   return Text(' ')
 }
 
-/** Set the text content of Text node */
+/** Set text content of the Text node */
 export function setText(node, text) {
   node.textContent = String(text)
 }
 
-/** Set the value of the form Element */
-export function setValue(node, text) {
-  node.value = String(text)
+/** Set value of the form Element */
+export function setValue(el, text) {
+  el.value = String(text)
 }
 
-/** Listen an event for the element */
+/** Listen event for the element */
 export function listen(el, evName, callback, update) {
   const cb = e => {
     callback(e)
