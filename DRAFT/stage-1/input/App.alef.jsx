@@ -8,6 +8,6 @@ function reset() {
 	name = 'World'
 }
 
-<p>Hello {name}!</p>;
-<input value={name} onChange={onChange} />;
-<button onClick={reset}>Reset</button>;
+$t: <p>Hello {name}!</p>
+$t: <input value={name} onChange={onChange} />
+$t: <button onClick={reset}>Reset</button>
