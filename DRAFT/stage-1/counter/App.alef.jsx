@@ -1,5 +1,5 @@
-let n = 0;
+let n = 0
 
-<p>current count is {n}</p>;
-<button onClick={() => { n-- }}>-</button>;
-<button onClick={() => { n++ }}>+</button>;
+$t: <p>current count is {n}</p>
+$t: <button onClick={() => { n-- }}>-</button>
+$t: <button onClick={() => { n++ }}>+</button>
