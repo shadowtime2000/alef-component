@@ -15,15 +15,15 @@ export default class App extends Component {
     let n = 0
 
     // create nodes
-    let p = Element('p')
-    let t = Text('current count is ', p)
-    let t2 = Text(n, p)
-    let s = space()
-    let button = Element('button')
-    let t3 = Text('-', button)
-    let s2 = space()
-    let button2 = Element('button')
-    let t4 = Text('+', button2)
+    const p = Element('p')
+    const t = Text('current count is ', p)
+    const t2 = Text(n, p)
+    const s = space()
+    const button = Element('button')
+    const t3 = Text('-', button)
+    const s2 = space()
+    const button2 = Element('button')
+    const t4 = Text('+', button2)
 
     // event handles
     const _1 /* button[0].onClick */ = () => {
@@ -33,17 +33,18 @@ export default class App extends Component {
       n++ // dirty data: n
     }
 
+    // create updates
+    const n_up = () => {
+      setText(t2, n)
+    }
+
     // register nodes
     this.nodes = [p, s, button, s2, button2]
 
     // listen events
     this.disposes = [
-      listen(button, 'click', _1, () => {
-        setText(t2, n) // <- n
-      }),
-      listen(button2, 'click', _2, () => {
-        setText(t2, n) // <- n
-      })
+      listen(button, 'click', _1, n_up),
+      listen(button2, 'click', _2, n_up)
     ]
   }
 }

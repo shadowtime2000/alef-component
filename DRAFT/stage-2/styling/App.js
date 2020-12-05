@@ -20,17 +20,18 @@ export default class App extends Component {
     let n = 0
 
     // create nodes
-    let p = Element('p', { class: sid })
-    let t = Text('current count is ', p)
-    let t2 = Text(n, p)
-    let s = space()
-    let button = Element('button', { class: sid })
-    let t3 = Text('-', button)
-    let s2 = space()
-    let button2 = Element('button', { class: sid })
-    let t4 = Text('+', button2)
+    const p = Element('p', { class: sid })
+    const t = Text('current count is ', p)
+    const t2 = Text(n, p)
+    const s = space()
+    const button = Element('button', { class: sid })
+    const t3 = Text('-', button)
+    const s2 = space()
+    const button2 = Element('button', { class: sid })
+    const t4 = Text('+', button2)
 
-    let style = new Style(sid, id => `
+    // create styles
+    const style = new Style(sid, id => `
 /* unused h1 */
 /*
   h1 {
@@ -56,19 +57,19 @@ button.${id} {
       n++ // dirty data: n
     }
 
+    // create updates
+    const n_up = () => {
+      setText(t2, n)
+      style.update()
+    }
+
     // register nodes
     this.nodes = [style, p, s, button, s2, button2]
 
     // listen events
     this.disposes = [
-      listen(button, 'click', _1, () => {
-        setText(t2, n) // <- n
-        style.update() // <- n
-      }),
-      listen(button2, 'click', _2, () => {
-        setText(t2, n) // <- n
-        style.update() // <- n
-      })
+      listen(button, 'click', _1, n_up),
+      listen(button2, 'click', _2, n_up)
     ]
   }
 }

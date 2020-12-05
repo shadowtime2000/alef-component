@@ -16,15 +16,15 @@ export default class App extends Component {
     let name = 'World'
 
     // create nodes
-    let p = Element('p')
-    let t = Text('Hello ', p)
-    let t2 = Text(name, p)
-    let t3 = Text('!', p)
-    let s = space()
-    let input = Element('input', { value: name })
-    let s2 = space()
-    let button = Element('button')
-    let t4 = Text('Reset', button)
+    const p = Element('p')
+    const t = Text('Hello ', p)
+    const t2 = Text(name, p)
+    const t3 = Text('!', p)
+    const s = space()
+    const input = Element('input', { value: name })
+    const s2 = space()
+    const button = Element('button')
+    const t4 = Text('Reset', button)
 
     // event handles
     function onChange(e) {
@@ -34,18 +34,19 @@ export default class App extends Component {
       name = 'World' // dirty data: name
     }
 
+    // create updates
+    const name_up = () => {
+      setText(t2, name)
+      setValue(input, name)
+    }
+
     // register nodes
     this.nodes = [p, s, input, s2, button]
 
     // listen events
     this.disposes = [
-      listen(input, 'input', onChange, () => {
-        setText(t2, name) // <- name
-      }),
-      listen(button, 'click', reset, () => {
-        setText(t2, name) // <- name
-        setValue(input, name) // <- name
-      })
+      listen(input, 'input', onChange, name_up),
+      listen(button, 'click', reset, name_up)
     ]
   }
 }

@@ -14,40 +14,48 @@ export default class App extends Component {
     let ok = false
 
     // create blocks 
-    let block = new IfBlock(
+    const block = new IfBlock(
       () => !ok,
       (self) => {
         // create nodes  
-        let button = Element('button')
-        let t = Text('OFF', button)
+        const button = Element('button')
+        const t = Text('OFF', button)
 
         // register nodes
         self.nodes = [button]
 
         // listen events
-        self.disposes = [listen(button, 'click', toggle, () => {
-          block.toggle() // <- ok
-          block2.toggle() // <- ok
-        })]
+        self.disposes = [
+          listen(button, 'click', toggle, () => {
+            ok_up()
+          })
+        ]
       }
     )
-    let block2 = new IfBlock(
+    const block2 = new IfBlock(
       () => ok,
       (self) => {
         // create nodes  
-        let button = Element('button')
-        let t = Text('ON', button)
+        const button = Element('button')
+        const t = Text('ON', button)
 
         // register nodes
         self.nodes = [button]
 
         // listen events
-        self.disposes = [listen(button, 'click', toggle, () => {
-          block.toggle() // <- ok
-          block2.toggle() // <- ok
-        })]
+        self.disposes = [
+          listen(button, 'click', toggle, () => {
+            ok_up()
+          })
+        ]
       }
     )
+
+    // create updates
+    const ok_up = () => {
+      block.toggle()
+      block2.toggle()
+    }
 
     // event handles
     function toggle() {

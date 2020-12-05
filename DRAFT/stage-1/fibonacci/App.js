@@ -19,18 +19,24 @@ export default class App extends Component {
     const $1 /* {numbers.join(' + ')} */ = () => numbers.join(' + ') // dep: numbers
 
     // create nodes
-    let p = Element('p')
-    let t = Text('0 + ', p)
-    let t2 = Text($1(), p)
-    let t3 = Text(' = ', p)
-    let t4 = Text($sum(), p)
-    let s = space()
-    let button = Element('button')
-    let t5 = Text('Add a number', button)
+    const p = Element('p')
+    const t = Text('0 + ', p)
+    const t2 = Text($1(), p)
+    const t3 = Text(' = ', p)
+    const t4 = Text($sum(), p)
+    const s = space()
+    const button = Element('button')
+    const t5 = Text('Add a number', button)
 
     // event handles
     function addNumber() {
       numbers = [...numbers, (numbers[numbers.length - 2] || 0) + numbers[numbers.length - 1]] // dirty data: numbers
+    }
+
+    // create updates
+    const numbers_up = () => {
+      setText(t2, $1())
+      setText(t4, $sum())
     }
 
     // register nodes
@@ -38,10 +44,7 @@ export default class App extends Component {
 
     // listen events
     this.disposes = [
-      listen(button, 'click', addNumber, () => {
-        setText(t2, $1()) // <- numbers
-        setText(t4, $sum()) // <- numbers
-      })
+      listen(button, 'click', addNumber, numbers_up)
     ]
   }
 }
