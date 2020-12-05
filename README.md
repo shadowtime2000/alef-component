@@ -22,12 +22,12 @@ let n: number = 0 // state
 $: double = 2 * n
 $: message = `Hello ${name}!`
 
-// eq `useEffect(() => {}, [n])`
+// eq `useEffect(callback, [n])`
 $: () => {
   console.log(`current count is ${n}`)
 }
 
-// eq `useEffect(() => {}, [])`
+// eq `useEffect(callback, [])`
 $: () => {
   console.log('mounted')
   return () => {
@@ -59,7 +59,7 @@ $style: `
 
 ## Draft
 
-The draft will be parted in three stages, currently accept any suggestions about it. After the DRAFT is locked, the **AOT** comilper in Rust will be implemented to make it works in nodejs and Deno.
+The draft will be parted in three stages, currently accept any new features and improvements about it. After the DRAFT is locked, the **AOT** comilper in Rust will be implemented to make it works in nodejs and Deno.
 
 - Stage 1
   - **nodes rendering**: render nodes using native DOM
