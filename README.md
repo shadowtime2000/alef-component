@@ -10,7 +10,51 @@ Alef Component for Modern Web Apps, it's inspired by **React** and **Svelte** an
 - Reactive
 - Support SSR
 
-![Alef Component](./assets/alef_component.png)
+```jsx
+import Logo from './Logo.alef'
+
+const name: string = 'World' // prop
+
+let n: number = 0 // state
+
+// eq `useMemo`
+$: double = 2 * n
+$: message = `Hello ${name}!`
+
+// eq `useEffect(()=>{}, [n])`
+$: () => {
+  console.log(`current n is ${n}.`)
+}
+
+// eq `useEffect(()=>{}, [])`
+$: () => {
+  console.log('mounted')
+  return () => {
+    console.log('unmounted')
+  }
+}
+
+// event handler
+function onClick() {
+  n++ // eq `setN(n => n+1)`
+}
+
+// nodes(template)
+$t: <Logo />
+$t: <div>{message}</div>
+$t: <p onClick={onClick}>Counter: {double}</p>
+
+// styling
+$style: `
+  /* unused h1, tree-shaking to remove it */
+  h1 {
+    font-size: 200%;
+  }
+  p {
+    color: ${Math.abs(n) >= 10 ? 'red' : 'green'}    
+  }
+`
+```
 
 ## Draft
 
