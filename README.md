@@ -59,7 +59,7 @@ $style: `
 
 ## Draft
 
-The draft will be parted in three stages, currently accept any new features and improvements about it. After the DRAFT is locked, the **AOT** comilper in Rust will be implemented to make it works in nodejs and Deno.
+This *DRAFT* is parted in three stages, currently accept any new features and improvements about it. After the draft is locked, the **AOT** comilper in Rust will be implemented to make it works in nodejs and Deno.
 
 - Stage 1
   - **nodes rendering**: render nodes using native DOM
@@ -82,6 +82,9 @@ The draft will be parted in three stages, currently accept any new features and 
 ### Run Draft
 
 ```bash
+git clone https://github.com/alephjs/alef
+cd alef
+
 npx serve DRAFT
 ```
 
