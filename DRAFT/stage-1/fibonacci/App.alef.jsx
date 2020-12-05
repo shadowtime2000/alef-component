@@ -6,5 +6,5 @@ function addNumber() {
 	numbers = [...numbers, (numbers[numbers.length - 2] || 0) + numbers[numbers.length - 1]]
 }
 
-<p>0 + {numbers.join(' + ')} = {sum}</p>;
-<button onClick={addNumber}>Add a number</button>;
+$t: <p>0 + {numbers.join(' + ')} = {sum}</p>
+$t: <button onClick={addNumber}>Add a number</button>
