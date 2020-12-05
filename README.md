@@ -5,9 +5,10 @@ Alef Component for Modern Web Apps, it's inspired by **React** and **Svelte** an
 - Born in Typescript
 - With Standard JSX Syntax
 - AOT Compile in Rust
-- No Virtual DOM
 - Zero Runtime
+- No Virtual DOM
 - Reactive
+- Builtin Styling
 - Support SSR
 
 ```jsx
@@ -61,9 +62,10 @@ $style: `
 - Stage 1
   - **nodes rendering**: render nodes using native DOM
   - **conditional rendering**：...if...else...
+  - **loop rendering**：render list
   - **events**: handle events to update view
-  - **memo**: reactive state
-  - **effect**: reactive function
+  - **memo**: use computed states
+  - **side effect**: react(apply side effect) for state changing
 - Stage 2
   - **styling**: transform inline CSS with scope
   - **import alef component** - `import Logo from "Logo.alef"`
