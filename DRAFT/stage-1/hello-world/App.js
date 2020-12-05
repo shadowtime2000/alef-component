@@ -2,7 +2,7 @@ import {
   Component,
   Element,
   Text
-} from '../../helper.js'
+} from '../../../lib/helper.js'
 
 export default class App extends Component {
   constructor() {

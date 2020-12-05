@@ -10,39 +10,37 @@ export class Component {
   }
   unmount() {
     this.disposes.forEach(dispose => dispose())
-    if (this.el) {
-      this.nodes.forEach(node => {
-        if (node instanceof IfBlock) {
-          node.disposes.forEach(dispose => dispose())
-        }
-        this._remove(node)
-      })
-    }
+    this.nodes.forEach(node => {
+      if (node instanceof IfBlock) {
+        node.disposes.forEach(dispose => dispose())
+      }
+      this._remove(node)
+    })
   }
-  _append(child) {
+  _append(node) {
     const { el } = this
     if (el) {
-      if (child instanceof IfBlock) {
-        el.appendChild(child.placeholder)
-        child.toggle()
-      } else if (child instanceof Style) {
-        document.head.appendChild(child.el)
-        child.update()
+      if (node instanceof IfBlock) {
+        el.appendChild(node.placeholder)
+        node.toggle()
+      } else if (node instanceof Style) {
+        document.head.appendChild(node.el)
+        node.update()
       } else {
-        el.appendChild(child)
+        el.appendChild(node)
       }
     }
   }
-  _remove(child) {
+  _remove(node) {
     const { el } = this
     if (el) {
-      if (child instanceof IfBlock) {
-        child.nodes.forEach(node => removeChild(el, node))
-        removeChild(el, child.placeholder)
-      } else if (child instanceof Style) {
-        removeChild(document.head, child.el)
+      if (node instanceof IfBlock) {
+        node.nodes.forEach(node => removeChild(el, node))
+        removeChild(el, node.placeholder)
+      } else if (node instanceof Style) {
+        removeChild(document.head, node.el)
       } else {
-        removeChild(el, child)
+        removeChild(el, node)
       }
     }
   }

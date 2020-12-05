@@ -7,7 +7,7 @@ import {
   Style,
   StyleId,
   Text
-} from '../../helper.js'
+} from '../../lib/helper.js'
 
 export default class App extends Component {
   constructor() {
@@ -63,11 +63,11 @@ button.${id} {
     this.disposes = [
       listen(button, 'click', _1, () => {
         setText(t2, n) // <- n
-        $style.update() // <- n
+        style.update() // <- n
       }),
       listen(button2, 'click', _2, () => {
         setText(t2, n) // <- n
-        $style.update() // <- n
+        style.update() // <- n
       })
     ]
   }
