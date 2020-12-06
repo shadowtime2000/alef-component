@@ -22,15 +22,15 @@ export default class App extends Component {
     /**/ const p = Element('p', block)
 
     /***/ const block2 = If(() => show, p)
-    /****/ const span = Element('span', block2)
-    /*****/ const text2 = Text(text, span)
+    /****/ const code = Element('code', block2)
+    /*****/ const text2 = Text(text, code)
 
     /***/ const block3 = If(() => !show, p)
-    /****/ const span2 = Element('span', block3)
-    /*****/ const text3 = Text($1(), span2)
+    /****/ const code2 = Element('code', block3)
+    /*****/ const text3 = Text($1(), code2)
 
-    /***/ const span3 = Element('span', p)
-    /****/ const text4 = Text(' ' /* &nbsp; */, span3)
+    /***/ const span = Element('span', p)
+    /****/ const text4 = Text(' ' /* &nbsp; */, span)
 
     /***/ const block4 = If(() => show, p)
     /****/ const button = Element('button', block4)
