@@ -42,11 +42,11 @@ export default class App extends Component {
 
     const block6 = If(() => !ok)
     /**/ const button3 = Element('button', block6)
-    /***/ const text7 = Text('OFF', button3)
+    /***/ const text7 = Text('ON', button3)
 
     const block7 = If(() => ok)
     /**/ const button4 = Element('button', block7)
-    /***/ const text8 = Text('ON', button4)
+    /***/ const text8 = Text('OFF', button4)
 
     // create updates
     const text_up = () => {

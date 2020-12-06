@@ -4,9 +4,8 @@
 export class Component {
   nodes = []
   slots = []
-  propsChangeCallbacks = new Map()
-  mounted = false
-  activated = false
+  propChangeCallbacks = new Map()
+  mounted = false 
   constructor(props = {}) {
     this.props = props
   }
@@ -30,13 +29,13 @@ export class Component {
   }
   update(key, value) {
     this.props[key] = value
-    this.propsChangeCallbacks.get(key)?.forEach(callback => callback()) // todo: push to asynchronous update queue
+    this.propChangeCallbacks.get(key)?.forEach(callback => callback()) // todo: push to asynchronous update queue
   }
   onPropChange(key, ...callbacks) {
-    let a = this.propsChangeCallbacks.get(key)
+    let a = this.propChangeCallbacks.get(key)
     if (!a) {
       a = []
-      this.propsChangeCallbacks.set(key, a)
+      this.propChangeCallbacks.set(key, a)
     }
     a.push(...callbacks)
   }
@@ -228,10 +227,10 @@ function removeNode(node) {
     node.nodes.forEach(node => removeNode(node))
   } else if (node instanceof AlefElement) {
     removeEl(node.el)
-    node.falsify()
+    node.deactivate()
   } else if (node instanceof IfBlock) {
     removeEl(node.placeholder)
-    node.deactivate()
+    node.falsify()
   } else if (node instanceof AlefStyle) {
     removeEl(node.el)
   } else if (node instanceof AlefText) {
