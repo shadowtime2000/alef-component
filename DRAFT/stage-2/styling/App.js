@@ -1,9 +1,7 @@
 import {
   Component,
   Element,
-  listen,
-  setText,
-  space,
+  Space,
   Style,
   StyleId,
   Text
@@ -23,10 +21,10 @@ export default class App extends Component {
     const p = Element('p', { class: sid })
     const t = Text('current count is ', p)
     const t2 = Text(n, p)
-    const s = space()
+    const s = Space()
     const button = Element('button', { class: sid })
     const t3 = Text('-', button)
-    const s2 = space()
+    const s2 = Space()
     const button2 = Element('button', { class: sid })
     const t4 = Text('+', button2)
 
@@ -59,17 +57,15 @@ button.${id} {
 
     // create updates
     const n_up = () => {
-      setText(t2, n)
+      t2.setText(n)
       style.update()
     }
 
-    // register nodes
-    this.nodes = [style, p, s, button, s2, button2]
-
     // listen events
-    this.disposes = [
-      listen(button, 'click', _1, n_up),
-      listen(button2, 'click', _2, n_up)
-    ]
+    button.listen('click', _1, n_up)
+    button2.listen('click', _2, n_up)
+
+    // register nodes
+    this.register(style, p, s, button, s2, button2)
   }
 }

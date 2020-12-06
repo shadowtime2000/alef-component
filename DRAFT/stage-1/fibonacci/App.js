@@ -1,9 +1,7 @@
 import {
   Component,
   Element,
-  listen,
-  setText,
-  space,
+  Space,
   Text
 } from '../../../lib/helper.js'
 
@@ -24,7 +22,7 @@ export default class App extends Component {
     const t2 = Text($1(), p)
     const t3 = Text(' = ', p)
     const t4 = Text($sum(), p)
-    const s = space()
+    const s = Space()
     const button = Element('button')
     const t5 = Text('Add a number', button)
 
@@ -35,16 +33,14 @@ export default class App extends Component {
 
     // create updates
     const numbers_up = () => {
-      setText(t2, $1())
-      setText(t4, $sum())
+      t2.setText($1())
+      t4.setText($sum())
     }
 
-    // register nodes
-    this.nodes = [p, s, button]
-
     // listen events
-    this.disposes = [
-      listen(button, 'click', addNumber, numbers_up)
-    ]
+    button.listen('click', addNumber, numbers_up)
+
+    // register nodes
+    this.register(p, s, button)
   }
 }

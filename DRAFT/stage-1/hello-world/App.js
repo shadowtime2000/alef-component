@@ -16,6 +16,6 @@ export default class App extends Component {
     const t = Text(`hello ${name}!`, p)
 
     // register nodes
-    this.nodes = [p]
+    this.register(p)
   }
 }

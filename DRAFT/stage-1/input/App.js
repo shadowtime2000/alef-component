@@ -1,10 +1,7 @@
 import {
   Component,
   Element,
-  listen,
-  setText,
-  setValue,
-  space,
+  Space,
   Text
 } from '../../../lib/helper.js'
 
@@ -20,9 +17,9 @@ export default class App extends Component {
     const t = Text('Hello ', p)
     const t2 = Text(name, p)
     const t3 = Text('!', p)
-    const s = space()
+    const s = Space()
     const input = Element('input', { value: name })
-    const s2 = space()
+    const s2 = Space()
     const button = Element('button')
     const t4 = Text('Reset', button)
 
@@ -36,17 +33,15 @@ export default class App extends Component {
 
     // create updates
     const name_up = () => {
-      setText(t2, name)
-      setValue(input, name)
+      t2.setText(name)
+      input.setAttr('value', name)
     }
 
-    // register nodes
-    this.nodes = [p, s, input, s2, button]
-
     // listen events
-    this.disposes = [
-      listen(input, 'input', onChange, name_up),
-      listen(button, 'click', reset, name_up)
-    ]
+    input.listen('input', onChange, name_up)
+    button.listen('click', reset, name_up)
+
+    // register nodes
+    this.register(p, s, input, s2, button)
   }
 }

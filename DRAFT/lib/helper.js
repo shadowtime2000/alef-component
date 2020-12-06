@@ -3,51 +3,118 @@
 /** Alef basic component class. */
 export class Component {
   nodes = []
-  disposes = []
+  register( ...nodes) {
+    this.nodes = nodes
+  }
   mount(el) {
-    this.el = el
-    this.nodes.forEach(node => this._append(node))
+    this.nodes.forEach(node => appendNodeToDom(el, node))
   }
   unmount() {
-    this.disposes.forEach(dispose => dispose())
-    this.nodes.forEach(node => {
-      if (node instanceof IfBlock) {
-        node.disposes.forEach(dispose => dispose())
-      }
-      this._remove(node)
-    })
+    this.nodes.forEach(node => removeNode(node))
   }
-  _append(node) {
-    const { el } = this
-    if (el) {
-      if (node instanceof IfBlock) {
-        el.appendChild(node.placeholder)
-        node.toggle()
-      } else if (node instanceof Style) {
-        document.head.appendChild(node.el)
-        node.update()
-      } else {
-        el.appendChild(node)
+}
+
+export class AlefElement {
+  nodes = []
+  events = []
+  disposes = []
+  isClosed = false
+  isActivated = false
+  constructor(name, props, parent) {
+    this.el = document.createElement(name)
+    if (props instanceof AlefElement || props instanceof IfBlock) {
+      props.appendChild(this)
+    } else if (typeof props === 'object' || props !== null) {
+      for (const key in props) {
+        this.el.setAttribute(key, String(props[key]))
       }
     }
+    if (parent instanceof AlefElement || parent instanceof IfBlock) {
+      parent.appendChild(this)
+    }
   }
-  _remove(node) {
-    const { el } = this
-    if (el) {
-      if (node instanceof IfBlock) {
-        node.nodes.forEach(node => removeChild(el, node))
-        removeChild(el, node.placeholder)
-      } else if (node instanceof Style) {
-        removeChild(document.head, node.el)
-      } else {
-        removeChild(el, node)
-      }
+  appendChild(child) {
+    if (!this.isClosed) {
+      this.nodes.push(child)
+    } else {
+      console.warn(this.el.tagName, 'is closed')
+    }
+  }
+  setAttr(name, value) {
+    if (name === 'value') {
+      this.el.value = value
+    } else {
+      this.el.setAttribute(name, value)
+    }
+  }
+  listen(name, callback, ...updates) {
+    this.events.push({
+      name,
+      callback,
+      updates,
+    })
+  }
+  activate() {
+    if (!this.isActivated) {
+      this.isActivated = true
+      this.nodes.forEach(node => appendNodeToDom(this.el, node))
+      this.events.forEach(({ name, callback, updates }) => {
+        const cb = e => {
+          callback(e)
+          updates.forEach(update => update()) // todo: push to asynchronous update queue
+        }
+        this.el.addEventListener(name, cb)
+        this.disposes.push(() => this.el.removeEventListener(name, cb))
+      })
+    }
+  }
+  destory() {
+    if (this.isActivated) {
+      this.isActivated = false
+      this.disposes.forEach(dispose => dispose())
+      this.disposes = []
+      this.nodes.forEach(node => removeNode(node))
     }
   }
 }
 
-/** A style component to apply style. */
-export class Style {
+/* Create and return a new element node. */
+export function Element(name, props, parent) {
+  return new AlefElement(name, props, parent)
+}
+
+/** A block component to handle conditional rendering. */
+export class IfBlock {
+  nodes = []
+  placeholder = document.createComment('if-block')
+  constructor(validate, parent) {
+    this.validate = validate
+    if (parent) {
+      parent.appendChild(this)
+    }
+  }
+  appendChild(child) {
+    this.nodes.push(child)
+  }
+  toggle() {
+    if (this.validate()) {
+      this.nodes.forEach(node => insertNode(node, this.placeholder))
+    } else {
+      this.nodes.forEach(node => removeNode(node))
+    }
+  }
+  destory() {
+    this.nodes.forEach(node => removeNode(node))
+  }
+}
+
+/* Create and return a new if block. */
+export function If(validate, parent) {
+  return new IfBlock(validate, parent)
+}
+
+/** Alef style node to apply style. */
+export class AlefStyle {
   el = document.createElement('style')
   constructor(id, templateFn) {
     this.id = id
@@ -59,79 +126,88 @@ export class Style {
   }
 }
 
-/** A block component to handle conditional rendering. */
-export class IfBlock {
-  placeholder = document.createComment('if-block')
-  nodes = []
-  disposes = []
-  constructor(validate, init) {
-    this.validate = validate
-    init(this)
-  }
-  toggle() {
-    const { parentNode } = this.placeholder
-    if (parentNode) {
-      if (this.validate()) {
-        this.nodes.forEach(node => parentNode.insertBefore(node, this.placeholder))
-      } else {
-        this.nodes.forEach(node => removeChild(parentNode, node))
-      }
+/* Create and return a new style node. */
+export function Style(id, templateFn) {
+  return new AlefStyle(id, templateFn)
+}
+
+/* Alef text node to display text. */
+export class AlefText {
+  constructor(text, parent) {
+    this.node = document.createTextNode(text)
+    if (parent) {
+      parent.appendChild(this)
     }
+  }
+  setText(text) {
+    this.node.textContent = text
   }
 }
 
-/** Create and return a document element. */
-export function Element(name, props, parent) {
-  const el = document.createElement(name)
-  if (parent) {
-    parent.appendChild(el)
-  }
-  if (typeof props === 'object' || props !== null) {
-    for (const key in props) {
-      el.setAttribute(key, String(props[key]))
-    }
-  }
-  return el
-}
-
-/** Create and return a Text node. */
+/* Create and return a new text node. */
 export function Text(text, parent) {
-  const tn = document.createTextNode(String(text))
-  if (parent) {
-    parent.appendChild(tn)
+  return new AlefText(text, parent)
+}
+
+/** A shortcut for `new Text(' ')`. */
+export function Space(parent) {
+  return new AlefText(' ', parent)
+}
+
+/* Append the node to DOM */
+function appendNodeToDom(root, node) {
+  if (node instanceof AlefElement) {
+    root.appendChild(node.el)
+    node.activate()
+  } else if (node instanceof IfBlock) {
+    root.appendChild(node.placeholder)
+    node.toggle()
+  } else if (node instanceof AlefStyle) {
+    document.head.appendChild(node.el)
+    node.update()
+  } else if (node instanceof AlefText) {
+    root.appendChild(node.node)
   }
-  return tn
 }
 
-/** A shortcut for `Text(' ')`. */
-export function space() {
-  return Text(' ')
-}
-
-/** Set text content of the Text node. */
-export function setText(node, text) {
-  node.textContent = String(text)
-}
-
-/** Set value of the form Element. */
-export function setValue(el, text) {
-  el.value = String(text)
-}
-
-/** Listen event for the element. */
-export function listen(el, evName, callback, ...updates) {
-  const cb = e => {
-    callback(e)
-    updates.forEach(update => update())
+/** insert the node before given anchor. */
+function insertNode(node, anchor) {
+  const { parentNode } = anchor
+  if (parentNode) {
+    if (node instanceof AlefElement) {
+      parentNode.insertBefore(node.el, anchor)
+      node.activate()
+    } else if (child instanceof IfBlock) {
+      parentNode.insertBefore(node.placeholder, anchor)
+      node.toggle()
+    } else if (child instanceof AlefStyle) {
+      document.head.appendChild(node.el)
+      node.update()
+    } else if (child instanceof AlefText) {
+      parentNode.insertBefore(node.node, anchor)
+    }
   }
-  el.addEventListener(evName, cb)
-  return () => el.removeEventListener(evName, cb)
 }
 
-/** Remove the child from its parent. */
-export function removeChild(parent, child) {
-  if (child.parentNode === parent) {
-    parent.removeChild(child)
+/** Remove the node from its parent. */
+function removeNode(node) {
+  if (node instanceof AlefElement) {
+    removeEl(node.el)
+    node.destory()
+  } else if (node instanceof IfBlock) {
+    removeEl(node.placeholder)
+    node.destory()
+  } else if (node instanceof AlefStyle) {
+    removeEl(node.el)
+  } else if (node instanceof AlefText) {
+    removeEl(node.node)
+  }
+}
+
+/* Remove element from DOM. */
+function removeEl(el) {
+  if (el.parentNode) {
+    el.parentNode.removeChild(el)
   }
 }
 
