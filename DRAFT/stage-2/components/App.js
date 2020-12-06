@@ -1,3 +1,4 @@
+import Hello from './Hello.js'
 import {
   Component,
   Element,
@@ -13,15 +14,12 @@ export default class App extends Component {
     let name = 'World'
 
     // create nodes
-    const p = Element('p')
-    const t = Text('Hello ', p)
-    const t2 = Text(name, p)
-    const t3 = Text('!', p)
+    const hello = new Hello({ name }) 
     const s = Space()
     const input = Element('input', { value: name })
     const s2 = Space()
     const button = Element('button')
-    const t4 = Text('Reset', button)
+    const text3 = Text('Reset', button)
 
     // event handles
     function onChange(e) {
@@ -33,7 +31,7 @@ export default class App extends Component {
 
     // create updates
     const name_up = () => {
-      t2.setText(name)
+      hello.update('name', name)
       input.update('value', name)
     }
 
@@ -42,6 +40,6 @@ export default class App extends Component {
     button.listen('click', reset, name_up)
 
     // register nodes
-    this.register(p, s, input, s2, button)
+    this.register(hello, s, input, s2, button)
   }
 }

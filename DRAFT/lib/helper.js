@@ -3,33 +3,62 @@
 /** Alef basic component class. */
 export class Component {
   nodes = []
+  slots = []
+  propsChangeCallbacks = new Map()
+  mounted = false
+  activated = false
+  constructor(props = {}) {
+    this.props = props
+  }
   register(...nodes) {
     this.nodes = nodes
   }
+  appendChild(slot) {
+    this.slots.push(slot)
+  }
   mount(el) {
-    this.nodes.forEach(node => appendNodeToDom(el, node))
+    if (!this.mounted) {
+      this.mounted = true
+      this.nodes.forEach(node => appendNodeToDom(el, node))
+    }
   }
   unmount() {
-    this.nodes.forEach(node => removeNode(node))
+    if (!this.mounted) {
+      this.mounted = false
+      this.nodes.forEach(node => removeNode(node))
+    }
+  }
+  update(key, value) {
+    this.props[key] = value
+    this.propsChangeCallbacks.get(key)?.forEach(callback => callback()) // todo: push to asynchronous update queue
+  }
+  onPropChange(key, ...callbacks) {
+    let a = this.propsChangeCallbacks.get(key)
+    if (!a) {
+      a = []
+      this.propsChangeCallbacks.set(key, a)
+    }
+    a.push(...callbacks)
   }
 }
 
+/** Alef element node. */
 export class AlefElement {
   nodes = []
   events = []
   disposes = []
+  activated = false
   isClosed = false
-  isActivated = false
   constructor(name, props, parent) {
     this.el = document.createElement(name)
-    if (props instanceof AlefElement || props instanceof IfBlock) {
+    if (isComponent(props) || props instanceof AlefElement || props instanceof IfBlock) {
       props.appendChild(this)
     } else if (typeof props === 'object' || props !== null) {
       for (const key in props) {
         this.el.setAttribute(key, String(props[key]))
       }
     }
-    if (parent instanceof AlefElement || parent instanceof IfBlock) {
+    if (isComponent(parent) || parent instanceof AlefElement || parent instanceof IfBlock) {
       parent.appendChild(this)
     }
   }
@@ -40,11 +69,11 @@ export class AlefElement {
       console.warn(this.el.tagName, 'is closed')
     }
   }
-  setAttr(name, value) {
-    if (name === 'value') {
+  update(key, value) {
+    if (key === 'value') {
       this.el.value = value
     } else {
-      this.el.setAttribute(name, value)
+      this.el.setAttribute(key, value)
     }
   }
   listen(name, callback, ...updates) {
@@ -55,8 +84,8 @@ export class AlefElement {
     })
   }
   activate() {
-    if (!this.isActivated) {
-      this.isActivated = true
+    if (!this.activated) {
+      this.activated = true
       this.nodes.forEach(node => appendNodeToDom(this.el, node))
       this.events.forEach(({ name, callback, updates }) => {
         const cb = e => {
@@ -68,9 +97,9 @@ export class AlefElement {
       })
     }
   }
-  destory() {
-    if (this.isActivated) {
-      this.isActivated = false
+  deactivate() {
+    if (this.activated) {
+      this.activated = false
       this.disposes.forEach(dispose => dispose())
       this.disposes = []
       this.nodes.forEach(node => removeNode(node))
@@ -78,12 +107,12 @@ export class AlefElement {
   }
 }
 
-/* Create and return a new element node. */
+/** Create and return a new element node. */
 export function Element(name, props, parent) {
   return new AlefElement(name, props, parent)
 }
 
-/** A block component to handle conditional rendering. */
+/** If block to handle conditional rendering. */
 export class IfBlock {
   nodes = []
   placeholder = document.createTextNode('')
@@ -100,15 +129,15 @@ export class IfBlock {
     if (this.nodes.length > 0 && this.validate()) {
       this.nodes.forEach(node => insertNode(node, this.placeholder))
     } else {
-      this.nodes.forEach(node => removeNode(node))
+      this.falsify()
     }
   }
-  destory() {
+  falsify() {
     this.nodes.forEach(node => removeNode(node))
   }
 }
 
-/* Create and return a new if block. */
+/** Create and return a new if block. */
 export function If(validate, parent) {
   return new IfBlock(validate, parent)
 }
@@ -126,12 +155,12 @@ export class AlefStyle {
   }
 }
 
-/* Create and return a new style node. */
+/** Create and return a new style node. */
 export function Style(id, templateFn) {
   return new AlefStyle(id, templateFn)
 }
 
-/* Alef text node to display text. */
+/** Alef text node to display text. */
 export class AlefText {
   constructor(text, parent) {
     this.node = document.createTextNode(text)
@@ -144,7 +173,7 @@ export class AlefText {
   }
 }
 
-/* Create and return a new text node. */
+/** Create and return a new text node. */
 export function Text(text, parent) {
   return new AlefText(text, parent)
 }
@@ -154,9 +183,11 @@ export function Space(parent) {
   return new AlefText(' ', parent)
 }
 
-/* Append the node to DOM */
+/** Append the node to DOM */
 function appendNodeToDom(root, node) {
-  if (node instanceof AlefElement) {
+  if (isComponent(node)) {
+    node.nodes.forEach(node => appendNodeToDom(root, node))
+  } else if (node instanceof AlefElement) {
     root.appendChild(node.el)
     node.activate()
   } else if (node instanceof IfBlock) {
@@ -174,7 +205,9 @@ function appendNodeToDom(root, node) {
 function insertNode(node, anchor) {
   const { parentNode } = anchor
   if (parentNode) {
-    if (node instanceof AlefElement) {
+    if (isComponent(node)) {
+      node.nodes.forEach(node => insertNode(node, anchor))
+    } else if (node instanceof AlefElement) {
       parentNode.insertBefore(node.el, anchor)
       node.activate()
     } else if (child instanceof IfBlock) {
@@ -191,12 +224,14 @@ function insertNode(node, anchor) {
 
 /** Remove the node from its parent. */
 function removeNode(node) {
-  if (node instanceof AlefElement) {
+  if (isComponent(node)) {
+    node.nodes.forEach(node => removeNode(node))
+  } else if (node instanceof AlefElement) {
     removeEl(node.el)
-    node.destory()
+    node.falsify()
   } else if (node instanceof IfBlock) {
     removeEl(node.placeholder)
-    node.destory()
+    node.deactivate()
   } else if (node instanceof AlefStyle) {
     removeEl(node.el)
   } else if (node instanceof AlefText) {
@@ -204,11 +239,19 @@ function removeNode(node) {
   }
 }
 
-/* Remove element from DOM. */
+/** Remove element from DOM. */
 function removeEl(el) {
   if (el.parentNode) {
     el.parentNode.removeChild(el)
   }
+}
+
+/** Check object whether is a component. */
+function isComponent(obj) {
+  if (!(typeof obj === 'object' && obj !== null)) {
+    return false
+  }
+  return obj instanceof Component || obj.__proto__ instanceof Component
 }
 
 const idTable = '1234567890abcdefghijklmnopqrstuvwxyz'

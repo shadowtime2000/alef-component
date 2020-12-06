@@ -19,17 +19,15 @@ export default class App extends Component {
 
     // create nodes
     const p = Element('p', { class: sid })
-    const t = Text('current count is ', p)
-    const t2 = Text(n, p)
+    const text = Text('current count is ', p)
+    const text2 = Text(n, p)
     const s = Space()
     const button = Element('button', { class: sid })
-    const t3 = Text('-', button)
+    const text3 = Text('-', button)
     const s2 = Space()
     const button2 = Element('button', { class: sid })
-    const t4 = Text('+', button2)
-
-    // create styles
-    const style = new Style(sid, id => `
+    const text4 = Text('+', button2)
+    const style = Style(sid, id => `
 /* unused h1 */
 /*
   h1 {
@@ -57,7 +55,7 @@ button.${id} {
 
     // create updates
     const n_up = () => {
-      t2.setText(n)
+      text2.setText(n)
       style.update()
     }
 
