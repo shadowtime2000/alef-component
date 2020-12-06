@@ -3,7 +3,7 @@
 /** Alef basic component class. */
 export class Component {
   nodes = []
-  register( ...nodes) {
+  register(...nodes) {
     this.nodes = nodes
   }
   mount(el) {
@@ -86,7 +86,7 @@ export function Element(name, props, parent) {
 /** A block component to handle conditional rendering. */
 export class IfBlock {
   nodes = []
-  placeholder = document.createComment('if-block')
+  placeholder = document.createTextNode('')
   constructor(validate, parent) {
     this.validate = validate
     if (parent) {
@@ -97,7 +97,7 @@ export class IfBlock {
     this.nodes.push(child)
   }
   toggle() {
-    if (this.validate()) {
+    if (this.nodes.length > 0 && this.validate()) {
       this.nodes.forEach(node => insertNode(node, this.placeholder))
     } else {
       this.nodes.forEach(node => removeNode(node))
