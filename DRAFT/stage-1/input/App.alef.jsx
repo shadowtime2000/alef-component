@@ -1,11 +1,11 @@
 let name = 'World'
 
 function onChange(e) {
-	name = e.target.value
+  name = e.target.value
 }
 
 function reset() {
-	name = 'World'
+  name = 'World'
 }
 
 $t: <p>Hello {name}!</p>
