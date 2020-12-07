@@ -26,7 +26,7 @@ export default class App extends Component {
     const button = Element('button')
     const t5 = Text('Add a number', button)
 
-    // event handles
+    // create actions
     function addNumber() {
       numbers = [...numbers, (numbers[numbers.length - 2] || 0) + numbers[numbers.length - 1]] // dirty data: numbers
     }

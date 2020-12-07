@@ -14,14 +14,14 @@ export default class App extends Component {
     let name = 'World'
 
     // create nodes
-    const hello = new Hello({ name }) 
+    const hello = new Hello({ name })
     const s = Space()
     const input = Element('input', { value: name })
     const s2 = Space()
     const button = Element('button')
     const text3 = Text('Reset', button)
 
-    // event handles
+    // create actions
     function onChange(e) {
       name = e.target.value // dirty data: name
     }

@@ -23,7 +23,7 @@ export default class App extends Component {
     const button2 = Element('button')
     const t4 = Text('+', button2)
 
-    // event handles
+    // create actions
     const _1 /* button[0].onClick */ = () => {
       n-- // dirty data: n
     }

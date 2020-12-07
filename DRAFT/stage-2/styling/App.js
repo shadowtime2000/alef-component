@@ -45,7 +45,7 @@ button.${id} {
 }
 `)
 
-    // event handles
+    // create actions
     const _1 /* button[0].onClick */ = () => {
       n-- // dirty data: n
     }

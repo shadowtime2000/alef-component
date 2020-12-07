@@ -23,7 +23,7 @@ export default class App extends Component {
     const button = Element('button')
     const t4 = Text('Reset', button)
 
-    // event handles
+    // create actions
     function onChange(e) {
       name = e.target.value // dirty data: name
     }

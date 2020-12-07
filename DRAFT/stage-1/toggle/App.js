@@ -20,30 +20,23 @@ export default class App extends Component {
     // create nodes
     const block = If(() => ok)
     /**/ const p = Element('p', block)
-
     /***/ const block2 = If(() => show, p)
     /****/ const code = Element('code', block2)
     /*****/ const text2 = Text(text, code)
-
     /***/ const block3 = If(() => !show, p)
     /****/ const code2 = Element('code', block3)
     /*****/ const text3 = Text($1(), code2)
-
     /***/ const span = Element('span', p)
     /****/ const text4 = Text(' ' /* &nbsp; */, span)
-
     /***/ const block4 = If(() => show, p)
     /****/ const button = Element('button', block4)
     /*****/ const text5 = Text('Hide', button)
-
     /***/ const block5 = If(() => !show, p)
     /****/ const button2 = Element('button', block5)
     /*****/ const text6 = Text('Show', button2)
-
     const block6 = If(() => !ok)
     /**/ const button3 = Element('button', block6)
     /***/ const text7 = Text('ON', button3)
-
     const block7 = If(() => ok)
     /**/ const button4 = Element('button', block7)
     /***/ const text8 = Text('OFF', button4)
@@ -64,7 +57,7 @@ export default class App extends Component {
       block7.toggle()
     }
 
-    // event handles
+    // create actions
     const _1 /* button[0].onClick */ = () => {
       show = false // dirty data: show
     }
