@@ -69,7 +69,7 @@ $t: (
       placeholder="What needs to be done?"
       value={newTodo}
       onChange={e => newTodo = e.target.value}
-      onKeyup={e => e.key === 'entry' && addTodo()}
+      onKeyup={e => e.key === 'Entry' && addTodo}
     />
   </header>
 )
@@ -105,7 +105,7 @@ $t: if (todos.lenght > 0) {
               className="toggle"
               type="checkbox"
               checked={todo.completed}
-              onChange={e => todo.completed = e.target.checked}
+              onChange={e => { todo.completed = e.target.checked }}
             />
             <label
               onDoubleClick={() => editTodo(todo)}
@@ -120,8 +120,8 @@ $t: if (todos.lenght > 0) {
             type="text"
             value={todo.title}
             onBlur={() => doneEdit(todo)}
-            onKeyUp={e => e.key === 'entry' && doneEdit(todo)}
-            onKeyup={e => e.key === 'escape' && cancelEdit(todo)}
+            onKeyUp={e => e.key === 'Enter' && doneEdit(todo)}
+            onKeyup={e => e.key === 'Escape' && cancelEdit(todo)}
           />
         </li>
       ))}

@@ -1,17 +1,23 @@
-import Hello from './Hello.js'
 import {
   Component,
   Element,
   Space,
   Text
 } from '../../../lib/helper.js'
+import Hello from './Hello.js'
 
 export default class App extends Component {
   constructor() {
     super()
 
-    // initiate state
+    // strip types 
     let name = 'World'
+    function onChange(e) {
+      name = e.target.value // dirty data: name
+    }
+    function reset(e) {
+      name = 'World' // dirty data: name
+    }
 
     // create nodes
     const hello = new Hello({ name })
@@ -20,14 +26,6 @@ export default class App extends Component {
     const s2 = Space()
     const button = Element('button')
     const text3 = Text('Reset', button)
-
-    // create actions
-    function onChange(e) {
-      name = e.target.value // dirty data: name
-    }
-    function reset(e) {
-      name = 'World' // dirty data: name
-    }
 
     // create updates
     const name_up = () => {

@@ -8,7 +8,7 @@ export default class App extends Component {
   constructor() {
     super()
 
-    // initiate state
+    // strip types 
     let name = 'world'
 
     // create nodes

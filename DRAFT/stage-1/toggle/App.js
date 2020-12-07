@@ -9,13 +9,13 @@ export default class App extends Component {
   constructor() {
     super()
 
-    // initiate state
+    // strip types
     let text = 'El Aleph'
     let show = false
     let ok = false
-
-    // create memos
-    const $1 /* {'*'.repeat(text.length)} */ = () => '*'.repeat(text.length) // dep: text
+    function toggle() {
+      ok = !ok // dirty data: ok
+    }
 
     // create nodes
     const block = If(() => ok)
@@ -25,7 +25,7 @@ export default class App extends Component {
     /*****/ const text2 = Text(text, code)
     /***/ const block3 = If(() => !show, p)
     /****/ const code2 = Element('code', block3)
-    /*****/ const text3 = Text($1(), code2)
+    /*****/ const text3 = Text('*'.repeat(text.length), code2)
     /***/ const span = Element('span', p)
     /****/ const text4 = Text(' ' /* &nbsp; */, span)
     /***/ const block4 = If(() => show, p)
@@ -42,9 +42,6 @@ export default class App extends Component {
     /***/ const text8 = Text('OFF', button4)
 
     // create updates
-    const text_up = () => {
-      // static
-    }
     const show_up = () => {
       block2.toggle()
       block3.toggle()
@@ -57,20 +54,9 @@ export default class App extends Component {
       block7.toggle()
     }
 
-    // create actions
-    const _1 /* button[0].onClick */ = () => {
-      show = false // dirty data: show
-    }
-    const _2 /* button[1].onClick */ = () => {
-      show = true // dirty data: show
-    }
-    function toggle() {
-      ok = !ok // dirty data: ok
-    }
-
     // listen events
-    button.listen('click', _1, show_up)
-    button2.listen('click', _2, show_up)
+    button.listen('click', () => { show = false }, show_up)
+    button2.listen('click', () => { show = true }, show_up)
     button3.listen('click', toggle, ok_up)
     button4.listen('click', toggle, ok_up)
 

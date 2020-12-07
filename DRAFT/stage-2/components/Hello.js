@@ -9,7 +9,7 @@ export default class Hello extends Component {
     super(props)
 
     // props
-    const $name = () => this.props.name
+    const $name = () => this.props.name || 'World'
 
     // create nodes
     const p = Element('p')
@@ -19,7 +19,7 @@ export default class Hello extends Component {
 
     // create updates
     const $name_up = () => {
-      text2.setText($name())
+      text2.update($name())
     }
 
     // listen props changes

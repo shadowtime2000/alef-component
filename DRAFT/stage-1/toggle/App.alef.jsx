@@ -11,8 +11,8 @@ $t: if (ok) {
     {show && <code>{text}</code>}
     {!show && <code>{'*'.repeat(text.length)}</code>}
     <span>&nbsp;</span>
-    {show && <button onClick={() => show = false}>Hide</button>}
-    {!show && <button onClick={() => show = true}>Show</button>}
+    {show && <button onClick={() => { show = false }}>Hide</button>}
+    {!show && <button onClick={() => { show = true }}>Show</button>}
   </p>
 }
 

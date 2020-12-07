@@ -9,21 +9,8 @@ export default class App extends Component {
   constructor() {
     super()
 
-    // initiate state
+    // strip types 
     let name = 'World'
-
-    // create nodes
-    const p = Element('p')
-    const t = Text('Hello ', p)
-    const t2 = Text(name, p)
-    const t3 = Text('!', p)
-    const s = Space()
-    const input = Element('input', { value: name })
-    const s2 = Space()
-    const button = Element('button')
-    const t4 = Text('Reset', button)
-
-    // create actions
     function onChange(e) {
       name = e.target.value // dirty data: name
     }
@@ -31,9 +18,20 @@ export default class App extends Component {
       name = 'World' // dirty data: name
     }
 
+    // create nodes
+    const p = Element('p')
+    const text = Text('Hello ', p)
+    const text2 = Text(name, p)
+    const text3 = Text('!', p)
+    const s = Space()
+    const input = Element('input', { value: name })
+    const s2 = Space()
+    const button = Element('button')
+    const text4 = Text('Reset', button)
+
     // create updates
     const name_up = () => {
-      t2.setText(name)
+      text2.update(name)
       input.update('value', name)
     }
 

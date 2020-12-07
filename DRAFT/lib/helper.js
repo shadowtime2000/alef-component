@@ -5,7 +5,7 @@ export class Component {
   nodes = []
   slots = []
   propChangeCallbacks = new Map()
-  mounted = false 
+  mounted = false
   constructor(props = {}) {
     this.props = props
   }
@@ -54,7 +54,17 @@ export class AlefElement {
       props.appendChild(this)
     } else if (typeof props === 'object' || props !== null) {
       for (const key in props) {
-        this.el.setAttribute(key, String(props[key]))
+        switch (key) {
+          case 'className':
+            this.el.className = String(props[key])
+            break
+          case 'value':
+            this.el.value = String(props[key])
+            break
+          default:
+            this.el.setAttribute(key, String(props[key]))
+            break
+        }
       }
     }
     if (isComponent(parent) || parent instanceof AlefElement || parent instanceof IfBlock) {
@@ -69,10 +79,20 @@ export class AlefElement {
     }
   }
   update(key, value) {
-    if (key === 'value') {
-      this.el.value = value
-    } else {
-      this.el.setAttribute(key, value)
+    const { el } = this
+    const val = String(value)
+    switch (key) {
+      case 'className':
+        el.className = val
+        break
+      case 'value':
+        if (el.value.length != val.length && el.value != val) {
+          el.value = val
+        }
+        break
+      default:
+        el.setAttribute(key, val)
+        break
     }
   }
   listen(name, callback, ...updates) {
@@ -88,8 +108,9 @@ export class AlefElement {
       this.nodes.forEach(node => appendNodeToDom(this.el, node))
       this.events.forEach(({ name, callback, updates }) => {
         const cb = e => {
-          callback(e)
-          updates.forEach(update => update()) // todo: push to asynchronous update queue
+          if (callback(e) !== false) {
+            updates.forEach(update => update()) // todo: push to asynchronous update queue
+          }
         }
         this.el.addEventListener(name, cb)
         this.disposes.push(() => this.el.removeEventListener(name, cb))
@@ -126,10 +147,13 @@ export class IfBlock {
   }
   toggle() {
     if (this.nodes.length > 0 && this.validate()) {
-      this.nodes.forEach(node => insertNode(node, this.placeholder))
+      this.truify()
     } else {
       this.falsify()
     }
+  }
+  truify() {
+    this.nodes.forEach(node => insertNode(node, this.placeholder))
   }
   falsify() {
     this.nodes.forEach(node => removeNode(node))
@@ -139,6 +163,48 @@ export class IfBlock {
 /** Create and return a new if block. */
 export function If(validate, parent) {
   return new IfBlock(validate, parent)
+}
+
+/** List node for List block. */
+export class ListNode {
+  constructor(item, index, { node, key, up }) {
+    this.item = item
+    this.index = index
+    this.node = node
+    if (typeof key === 'string' && key.length > 0) {
+      this.key = key
+    } else if (typeof key === 'number') {
+      this.key = key.toString(16)
+    } else {
+      this.key = index.toString(16)
+    }
+    this.update = up
+  }
+}
+
+/** List block for map rendering. */
+export class ListBlock {
+  nodes = []
+  placeholder = document.createTextNode('')
+  constructor(get, block, parent) {
+    this.get = get
+    this.block = block
+    const items = get()
+    if (Array.isArray(items)) {
+      this.nodes = items.map((item, index) => new ListNode(item, index, block(item)))
+    }
+    if (parent) {
+      parent.appendChild(this)
+    }
+  }
+  update() {
+    this.nodes.forEach(node => node.update())
+  }
+}
+
+/** Create and return a new list block. */
+export function List(get, block, parent) {
+  return new ListBlock(get, block, parent)
 }
 
 /** Alef style node to apply style. */
@@ -167,7 +233,7 @@ export class AlefText {
       parent.appendChild(this)
     }
   }
-  setText(text) {
+  update(text) {
     this.node.textContent = text
   }
 }
