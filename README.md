@@ -43,9 +43,5 @@ cd alef-component-rfcs
 npx serve examples
 ```
 
-## Discord
-
-[![Let's Chat](https://img.shields.io/discord/775256646821085215?color=%23008181&label=Let%27s%20Chat&labelColor=%23111&logo=discord&logoColor=%23aaaaaa)](https://discord.gg/pWGdS7sAqD)
-
 ## Status
 Core concept is done, request for comments.
