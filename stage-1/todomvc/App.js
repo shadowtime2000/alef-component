@@ -80,10 +80,7 @@ export default class App extends Component {
       /**/ const input2 = Element('input', { className: 'edit', type: 'text', value: todo.title }, li)
 
       // create updates
-      const up = (refresh, value) => {
-        if (refresh) {
-          todo = value
-        }
+      const up = () => {
         li.update('className', $1())
         input.update('checked', todo.completed)
         text.update(todo.title)
@@ -119,7 +116,8 @@ export default class App extends Component {
     /**/ const section = Element('section', { className: 'main' }, block)
     /***/ const input2 = Element('input', { id: 'toggle-all', className: 'toggle-all', type: 'checkbox', checked: $remaining() === 0 }, section)
     /***/ const label = Element('label', { for: 'toggle-all' }, section)
-    /***/ const list = List(() => $filteredTodos(), $list_block, section)
+    /***/ const ul = Element('ul', { className: 'todo-list' }, section)
+    /***/ const list = List(() => $filteredTodos(), $list_block, ul)
     const block2 = If(() => todos.length > 0)
     /**/ const footer = Element('footer', { className: 'footer' }, block2)
 

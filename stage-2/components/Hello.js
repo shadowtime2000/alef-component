@@ -23,7 +23,7 @@ export default class Hello extends Component {
     }
 
     // listen props changes
-    this.onPropChange('name', $name_up)
+    this.listen('name', $name_up)
 
     // register nodes
     this.register(p)
