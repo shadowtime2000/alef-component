@@ -11,17 +11,17 @@ Alef Component for Modern Web Apps, it's inspired by **React** and **Svelte** an
 - No Virtual DOM
 - Reactive
 - Builtin Styling
-- Support **SSR**
+- **SSR**
 
 ## Stages
-This draft is parted in three stages, currently accept any new feature and improvement. After the draft is locked, the **AOT** comilper in Rust will be implemented to make it works in nodejs, Deno and browsers.
+This draft is parted in three stages, currently accept any new feature and improvement. After the draft is locked, the **AOT** comilper will be implemented to make it works in nodejs, Deno and browsers.
 
 - Stage I ([RFCs](https://github.com/alephjs/alef-component-draft/issues/3))
   - **Nodes Rendering** - render nodes using native DOM
-  - **Conditional Rendering** - ...if...else...
+  - **Conditional Rendering** - render if-else expression in JSX
   - **Loop Rendering** - render list
   - **Events** - handle events to update view
-  - **Memo** - use computed states
+  - **Memo** - use computed state
   - **Side Effect** - react for state changing
 - Stage II ([RFCs](https://github.com/alephjs/alef-component-draft/issues/4))
   - **Import Alef Component** - `import Logo from "./Logo.alef"`
