@@ -5,7 +5,7 @@ import {
   List,
   Space,
   Text
-} from '../../lib/helper.js'
+} from '../../../lib/helper.js'
 
 export default class App extends Component {
   constructor() {
@@ -124,8 +124,8 @@ export default class App extends Component {
     // create updates
     const todos_up = () => {
       input2.update('checked', $remaining())
-      block.toggle()
-      block2.toggle()
+      block.update()
+      block2.update()
       list.update()
     }
     const newTodo_up = () => {

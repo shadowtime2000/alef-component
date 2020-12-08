@@ -3,7 +3,8 @@ import {
   Element,
   Space,
   Text
-} from '../../../lib/helper.js'
+} from '../../lib/helper.js'
+import Hello from './Hello.js'
 
 export default class App extends Component {
   constructor() {
@@ -19,19 +20,16 @@ export default class App extends Component {
     }
 
     // create nodes
-    const p = Element('p')
-    const text = Text('Hello ', p)
-    const text2 = Text(name, p)
-    const text3 = Text('!', p)
+    const hello = new Hello({ name })
     const s = Space()
     const input = Element('input', { value: name })
     const s2 = Space()
     const button = Element('button')
-    const text4 = Text('Reset', button)
+    /**/ const text3 = Text('Reset', button)
 
     // create updates
     const name_up = () => {
-      text2.update(name)
+      hello.update('name', name)
       input.update('value', name)
     }
 
@@ -40,6 +38,6 @@ export default class App extends Component {
     button.listen('click', reset, name_up)
 
     // register nodes
-    this.register(p, s, input, s2, button)
+    this.register(hello, s, input, s2, button)
   }
 }

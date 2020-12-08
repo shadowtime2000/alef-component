@@ -3,7 +3,7 @@ import {
   Element,
   Space,
   Text
-} from '../../../lib/helper.js'
+} from '../../lib/helper.js'
 
 export default class App extends Component {
   constructor() {
@@ -21,13 +21,13 @@ export default class App extends Component {
 
     // create nodes
     const p = Element('p')
-    const text = Text('0 + ', p)
-    const text2 = Text($1(), p)
-    const text3 = Text(' = ', p)
-    const text4 = Text($sum(), p)
+    /**/ const text = Text('0 + ', p)
+    /**/ const text2 = Text($1(), p)
+    /**/ const text3 = Text(' = ', p)
+    /**/ const text4 = Text($sum(), p)
     const s = Space()
     const button = Element('button')
-    const text5 = Text('Add a number', button)
+    /**/ const text5 = Text('Add a number', button)
 
     // create updates
     const numbers_up = () => {

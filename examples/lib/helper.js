@@ -57,17 +57,7 @@ export class AlefElement {
       props.appendChild(this)
     } else if (typeof props === 'object' || props !== null) {
       for (const key in props) {
-        switch (key) {
-          case 'className':
-            this.el.className = String(props[key])
-            break
-          case 'value':
-            this.el.value = String(props[key])
-            break
-          default:
-            this.el.setAttribute(key, String(props[key]))
-            break
-        }
+        this.update(key, props[key])
       }
     }
     if (isComponent(parent) || parent instanceof AlefElement || parent instanceof IfBlock) {
@@ -83,18 +73,31 @@ export class AlefElement {
   }
   update(key, value) {
     const { el } = this
-    const val = String(value)
+    const nullValue = value === undefined || value === null
     switch (key) {
       case 'className':
-        el.className = val
+        if (nullValue) {
+          el.className = ''
+        } else {
+          el.className = String(value)
+        }
         break
       case 'value':
-        if (el.value.length != val.length && el.value != val) {
-          el.value = val
+        if (nullValue) {
+          el.value = ''
+        } else {
+          const val = String(value)
+          if (el.value.length != val.length && el.value != val) {
+            el.value = val
+          }
         }
         break
       default:
-        el.setAttribute(key, val)
+        if (nullValue) {
+          el.removeAttribute(key)
+        } else {
+          el.setAttribute(key, String(value))
+        }
         break
     }
   }
@@ -178,8 +181,8 @@ export function If(validate, parent) {
 /** If-Else block to handle conditional rendering. */
 export class IfElseBlock {
   constructor(validate, parent) {
-    this.if = new IfBlock(validate )
-    this.else = new IfBlock(()=>!validate() )
+    this.if = new IfBlock(validate)
+    this.else = new IfBlock(() => !validate())
     if (parent) {
       parent.appendChild(this)
     }
@@ -294,7 +297,7 @@ const dom = {
       root.appendChild(node.else.placeholder)
       node.if.update()
       node.else.update()
-    }  else if (node instanceof AlefStyle) {
+    } else if (node instanceof AlefStyle) {
       document.head.appendChild(node.el)
       node.update()
     } else if (node instanceof AlefText) {

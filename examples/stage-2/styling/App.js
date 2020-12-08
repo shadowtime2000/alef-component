@@ -11,22 +11,22 @@ export default class App extends Component {
   constructor() {
     super()
 
-    // create style ids
-    const sid = StyleId() // todo(stage-3): get ssr id
-
     // strip types
     let n = 0
 
+    // create style ids
+    const sid = StyleId() // todo(stage-3): get ssr id
+
     // create nodes
     const p = Element('p', { className: sid })
-    const text = Text('current count is ', p)
-    const text2 = Text(n, p)
+    /**/ const text = Text('current count is ', p)
+    /**/ const text2 = Text(n, p)
     const s = Space()
     const button = Element('button', { className: sid })
-    const text3 = Text('-', button)
+    /**/ const text3 = Text('-', button)
     const s2 = Space()
     const button2 = Element('button', { className: sid })
-    const text4 = Text('+', button2)
+    /**/ const text4 = Text('+', button2)
     const style = Style(sid, id => `
 /* unused h1 */
 /*

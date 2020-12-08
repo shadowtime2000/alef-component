@@ -2,7 +2,7 @@ import {
   Component,
   Element,
   Text
-} from '../../../lib/helper.js'
+} from '../../lib/helper.js'
 
 export default class App extends Component {
   constructor() {
@@ -13,9 +13,9 @@ export default class App extends Component {
 
     // create nodes
     const p = Element('p')
-    const text = Text('Hello ', p)
-    const text2 = Text(name, p)
-    const text3 = Text('!', p)
+    /**/ const text = Text('Hello ', p)
+    /**/ const text2 = Text(name, p)
+    /**/ const text3 = Text('!', p)
 
     // register nodes
     this.register(p)

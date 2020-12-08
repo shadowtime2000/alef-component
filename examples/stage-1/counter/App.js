@@ -3,7 +3,7 @@ import {
   Element,
   Space,
   Text
-} from '../../../lib/helper.js'
+} from '../../lib/helper.js'
 
 export default class App extends Component {
   constructor() {
@@ -14,14 +14,14 @@ export default class App extends Component {
 
     // create nodes
     const p = Element('p')
-    const text = Text('current count is ', p)
-    const text2 = Text(n, p)
+    /**/ const text = Text('current count is ', p)
+    /**/ const text2 = Text(n, p)
     const s = Space()
     const button = Element('button')
-    const text3 = Text('-', button)
+    /**/ const text3 = Text('-', button)
     const s2 = Space()
     const button2 = Element('button')
-    const text4 = Text('+', button2)
+    /**/ const text4 = Text('+', button2)
 
     // create updates
     const n_up = () => {

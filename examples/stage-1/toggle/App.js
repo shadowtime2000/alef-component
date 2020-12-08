@@ -3,7 +3,8 @@ import {
   Element,
   Text,
   If,
-} from '../../lib/helper.js'
+  IfElse,
+} from '../../../lib/helper.js'
 
 export default class App extends Component {
   constructor() {
@@ -34,24 +35,22 @@ export default class App extends Component {
     /***/ const block5 = If(() => !show, p)
     /****/ const button2 = Element('button', block5)
     /*****/ const text6 = Text('Show', button2)
-    const block6 = If(() => !ok)
-    /**/ const button3 = Element('button', block6)
+    const block6 = IfElse(() => !ok)
+    /**/ const button3 = Element('button', block6.if)
     /***/ const text7 = Text('ON', button3)
-    const block7 = If(() => ok)
-    /**/ const button4 = Element('button', block7)
+    /**/ const button4 = Element('button', block6.else)
     /***/ const text8 = Text('OFF', button4)
 
     // create updates
     const show_up = () => {
-      block2.toggle()
-      block3.toggle()
-      block4.toggle()
-      block5.toggle()
+      block2.update()
+      block3.update()
+      block4.update()
+      block5.update()
     }
     const ok_up = () => {
-      block.toggle()
-      block6.toggle()
-      block7.toggle()
+      block.update()
+      block6.update()
     }
 
     // listen events
@@ -61,6 +60,6 @@ export default class App extends Component {
     button4.listen('click', toggle, ok_up)
 
     // register nodes
-    this.register(block, block6, block7)
+    this.register(block, block6)
   }
 }

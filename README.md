@@ -40,7 +40,7 @@ This draft is parted in three stages, currently accept any new feature and impro
 git clone https://github.com/alephjs/alef-component-rfcs
 cd alef-component-rfcs
 
-npx serve
+npx serve examples
 ```
 
 ## Discord
