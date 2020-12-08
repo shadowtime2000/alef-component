@@ -29,6 +29,7 @@ This draft is parted in three stages, currently accept any new feature and impro
   - **Reuse Pattern** - reuse common logics
   - **Context** - share state in child component tree
   - **Styling** - inline CSS with scope
+  - **Mount** - mount Alef Component to DOM
 - Stage III ([RFCs](https://github.com/alephjs/alef-component-draft/issues/5))
   - **Asynchronous Component** - wait for data fetching
   - **Error Boundary** - catch errors in child component tree
