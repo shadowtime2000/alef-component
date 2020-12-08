@@ -16,20 +16,20 @@ Alef Component for Modern Web Apps, it's inspired by **React** and **Svelte** an
 ## Stages
 This draft is parted in three stages, currently accept any new feature and improvement. After the draft is locked, the **AOT** comilper in Rust will be implemented to make it works in nodejs, Deno and browsers.
 
-- Stage I ([RFC](https://github.com/alephjs/alef-component-draft/issues/3))
+- Stage I ([RFCs](https://github.com/alephjs/alef-component-draft/issues/3))
   - **Nodes Rendering** - render nodes using native DOM
   - **Conditional Rendering** - ...if...else...
   - **Loop Rendering** - render list
   - **Events** - handle events to update view
   - **Memo** - use computed states
   - **Side Effect** - react for state changing
-- Stage II ([RFC](https://github.com/alephjs/alef-component-draft/issues/4))
+- Stage II ([RFCs](https://github.com/alephjs/alef-component-draft/issues/4))
   - **Import Alef Component** - `import Logo from "./Logo.alef"`
   - **Slots** - `<Logo><img ... /></Logo>`
   - **Reuse Pattern** - reuse common logics
   - **Context** - share state in child component tree
   - **Styling** - inline CSS with scope
-- Stage III ([RFC](https://github.com/alephjs/alef-component-draft/issues/5))
+- Stage III ([RFCs](https://github.com/alephjs/alef-component-draft/issues/5))
   - **Asynchronous Component** - wait for data fetching
   - **Error Boundary** - catch errors in child component tree
   - **SSR** - server side rendering 
