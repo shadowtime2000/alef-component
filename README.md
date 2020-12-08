@@ -11,10 +11,10 @@ Alef Component for Modern Web Apps, it's inspired by **React** and **Svelte** an
 - No Virtual DOM
 - Reactive
 - Builtin Styling
-- Support SSR
+- Support **SSR**
 
 ## Stages
-This *DRAFT* is parted in three stages, currently accept any new features and improvements about it. After the draft is locked, the **AOT** comilper in Rust will be implemented to make it works in nodejs, Deno and broswers.
+This draft is parted in three stages, currently accept any new feature and improvement. After the draft is locked, the **AOT** comilper in Rust will be implemented to make it works in nodejs, Deno and browsers.
 
 - Stage I ([RFC](https://github.com/alephjs/alef-component-draft/issues/3))
   - **Nodes Rendering** - render nodes using native DOM
@@ -27,18 +27,18 @@ This *DRAFT* is parted in three stages, currently accept any new features and im
   - **Import Alef Component** - `import Logo from "./Logo.alef"`
   - **Slots** - `<Logo><img ... /></Logo>`
   - **Reuse Pattern** - reuse common logics
-  - **Context** - share state between components
+  - **Context** - share state in child component tree
   - **Styling** - inline CSS with scope
 - Stage III ([RFC](https://github.com/alephjs/alef-component-draft/issues/5))
-  - **Asynchronous Component** - asynchronous component waiting for data fetching
+  - **Asynchronous Component** - wait for data fetching
   - **Error Boundary** - catch errors in child component tree
   - **SSR** - server side rendering 
 
 ## Run Draft
 
 ```bash
-git clone https://github.com/alephjs/alef
-cd alef
+git clone https://github.com/alephjs/alef-component-draft
+cd alef-component-draft
 
 npx serve
 ```
