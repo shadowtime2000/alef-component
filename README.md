@@ -1,6 +1,6 @@
-![Alef Component Draft](./assets/banner.svg)
+![Alef Component Concept](./assets/banner.svg)
 
-# Alef Component Draft
+# Alef Component Concept
 
 Alef Component for Modern Web Apps, it's inspired by **React** and **Svelte** and based on **TSX**. Core features include:
 
@@ -37,11 +37,15 @@ This draft is parted in three stages, currently accept any new feature and impro
 ## Run Draft
 
 ```bash
-git clone https://github.com/alephjs/alef-component-draft
-cd alef-component-draft
+git clone https://github.com/alephjs/alef-component-rfcs
+cd alef-component-rfcs
 
 npx serve
 ```
 
+## Discord
+
+[![Let's Chat](https://img.shields.io/discord/775256646821085215?color=%23008181&label=Let%27s%20Chat&labelColor=%23111&logo=discord&logoColor=%23aaaaaa)](https://discord.gg/pWGdS7sAqD)
+
 ## Status
-Drafting the draft.
+Core concept is done, request for comments.
