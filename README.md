@@ -1,4 +1,4 @@
-# Alef Component
+# Alef Component Draft
 
 Alef Component for Modern Web Apps, it's inspired by **React** and **Svelte** and based on **TSX**.
 
@@ -11,54 +11,7 @@ Alef Component for Modern Web Apps, it's inspired by **React** and **Svelte** an
 - Builtin Styling
 - Support SSR
 
-```jsx
-import Logo from './Logo.alef'
-
-const name: string = 'World' // prop
-
-let n: number = 0 // state
-
-// eq `useMemo`
-$: double = 2 * n
-$: message = `Hello ${name}!`
-
-// eq `useEffect(callback, [n])`
-$: () => {
-  console.log(`current count is ${n}`)
-}
-
-// eq `useEffect(callback, [])`
-$: () => {
-  console.log('mounted')
-  return () => {
-    console.log('unmounted')
-  }
-}
-
-// event handler
-function onClick() {
-  n++ // eq `setN(n => n+1)`
-}
-
-// nodes(template)
-$t: <Logo />
-$t: <div>{message}</div>
-$t: <p onClick={onClick}>Counter: {double}</p>
-
-// styling
-$style: `
-  /* unused h1 (tree-shaking) */
-  h1 {
-    font-size: 200%;
-  }
-  p {
-    color: ${Math.abs(n) >= 10 ? 'red' : 'green'}    
-  }
-`
-```
-
-## Draft
-
+## Stages
 This *DRAFT* is parted in three stages, currently accept any new features and improvements about it. After the draft is locked, the **AOT** comilper in Rust will be implemented to make it works in nodejs and Deno.
 
 - Stage 1
@@ -77,17 +30,12 @@ This *DRAFT* is parted in three stages, currently accept any new features and im
 - Stage 3
   - **SSR** - server side rendering 
   - **suspense** - suspense for data fetching
-  - **tooling** - documentation, webpack/rullup loader, IDE support, ...
 
-### Run Draft
+## Run Draft
 
 ```bash
 git clone https://github.com/alephjs/alef
 cd alef
 
-npx serve DRAFT
+npx serve
 ```
-
-## Status
-
-Drafting the draft.
