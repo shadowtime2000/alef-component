@@ -30,8 +30,9 @@ This *DRAFT* is parted in three stages, currently accept any new features and im
   - **context** - share state between components
   - **styling**: inline CSS with scope
 - Stage III ([RFC](https://github.com/alephjs/alef-component-draft/issues/5))
+  - **asynchronous component** - asynchronous component waiting for data fetching
+  - **error boundary** - catch errors in child component tree
   - **SSR** - server side rendering 
-  - **suspense** - suspense for data fetching
 
 ## Run Draft
 
