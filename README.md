@@ -24,11 +24,11 @@ This *DRAFT* is parted in three stages, currently accept any new features and im
   - **memo**: use computed states
   - **side effect**: react for state changing
 - Stage II ([RFC](https://github.com/alephjs/alef-component-draft/issues/4))
-  - **styling**: inline CSS with scope
   - **import alef component** - `import Logo from "./Logo.alef"`
   - **slots** - `<Logo><img ... /></Logo>`
   - **reuse pattern** - reuse common logics
-  - **stores** - share state between components
+  - **context** - share state between components
+  - **styling**: inline CSS with scope
 - Stage III ([RFC](https://github.com/alephjs/alef-component-draft/issues/5))
   - **SSR** - server side rendering 
   - **suspense** - suspense for data fetching
