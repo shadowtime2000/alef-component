@@ -70,7 +70,7 @@ This *DRAFT* is parted in three stages, currently accept any new features and im
   - **side effect**: react for state changing
 - Stage 2
   - **styling**: transform inline CSS with scope
-  - **import alef component** - `import Logo from "Logo.alef"`
+  - **import alef component** - `import Logo from "./Logo.alef"`
   - **slots** - `<Logo><img ... /></Logo>`
   - **reuse pattern** - reuse common logics
   - **stores** - share state in global
