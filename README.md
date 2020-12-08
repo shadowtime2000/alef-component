@@ -1,7 +1,5 @@
 ![Alef Component Draft](./assets/banner.svg)
 
-<br>
-
 # Alef Component Draft
 
 Alef Component for Modern Web Apps, it's inspired by **React** and **Svelte** and based on **TSX**. Core features include:
