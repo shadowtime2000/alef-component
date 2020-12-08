@@ -22,7 +22,7 @@ export class Component {
     }
   }
   unmount() {
-    if (!this.mounted) {
+    if (this.mounted) {
       this.mounted = false
       this.nodes.forEach(node => dom.removeNode(node))
     }
