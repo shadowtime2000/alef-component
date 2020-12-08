@@ -5,7 +5,7 @@
 Alef Component for Modern Web Apps, it's inspired by **React** and **Svelte** and based on **TSX**. Core features include:
 
 - Born in **Typescript**
-- With Standard **TSX** Syntax
+- With Standard **JSX** Syntax
 - **AOT** Compile in Rust
 - Zero Runtime
 - No Virtual DOM
@@ -14,24 +14,24 @@ Alef Component for Modern Web Apps, it's inspired by **React** and **Svelte** an
 - Support SSR
 
 ## Stages
-This *DRAFT* is parted in three stages, currently accept any new features and improvements about it. After the draft is locked, the **AOT** comilper in Rust will be implemented to make it works in nodejs and Deno.
+This *DRAFT* is parted in three stages, currently accept any new features and improvements about it. After the draft is locked, the **AOT** comilper in Rust will be implemented to make it works in nodejs, Deno and broswers.
 
 - Stage I ([RFC](https://github.com/alephjs/alef-component-draft/issues/3))
-  - **nodes rendering**: render nodes using native DOM
-  - **conditional rendering**：...if...else...
-  - **loop rendering**：render list
-  - **events**: handle events to update view
-  - **memo**: use computed states
-  - **side effect**: react for state changing
+  - **Nodes Rendering** - render nodes using native DOM
+  - **Conditional Rendering** - ...if...else...
+  - **Loop Rendering** - render list
+  - **Events** - handle events to update view
+  - **Memo** - use computed states
+  - **Side Effect** - react for state changing
 - Stage II ([RFC](https://github.com/alephjs/alef-component-draft/issues/4))
-  - **import alef component** - `import Logo from "./Logo.alef"`
-  - **slots** - `<Logo><img ... /></Logo>`
-  - **reuse pattern** - reuse common logics
-  - **context** - share state between components
-  - **styling**: inline CSS with scope
+  - **Import Alef Component** - `import Logo from "./Logo.alef"`
+  - **Slots** - `<Logo><img ... /></Logo>`
+  - **Reuse Pattern** - reuse common logics
+  - **Context** - share state between components
+  - **Styling** - inline CSS with scope
 - Stage III ([RFC](https://github.com/alephjs/alef-component-draft/issues/5))
-  - **asynchronous component** - asynchronous component waiting for data fetching
-  - **error boundary** - catch errors in child component tree
+  - **Asynchronous Component** - asynchronous component waiting for data fetching
+  - **Error Boundary** - catch errors in child component tree
   - **SSR** - server side rendering 
 
 ## Run Draft
@@ -42,3 +42,6 @@ cd alef
 
 npx serve
 ```
+
+## Status
+Drafting the draft.
