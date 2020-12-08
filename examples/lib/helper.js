@@ -295,8 +295,7 @@ const dom = {
     } else if (node instanceof IfElseBlock) {
       root.appendChild(node.if.placeholder)
       root.appendChild(node.else.placeholder)
-      node.if.update()
-      node.else.update()
+      node.update()
     } else if (node instanceof AlefStyle) {
       document.head.appendChild(node.el)
       node.update()
@@ -319,8 +318,7 @@ const dom = {
       } else if (child instanceof IfElseBlock) {
         parentNode.insertBefore(node.if.placeholder, anchor)
         parentNode.insertBefore(node.else.placeholder, anchor)
-        node.if.update()
-        node.else.update()
+        node.update()
       } else if (child instanceof AlefStyle) {
         document.head.appendChild(node.el)
         node.update()
@@ -339,7 +337,7 @@ const dom = {
     } else if (node instanceof IfBlock) {
       node.falsify()
       removeEl(node.placeholder)
-    } else if (node instanceof IfBlock) {
+    } else if (node instanceof IfElseBlock) {
       node.if.falsify()
       node.else.falsify()
       removeEl(node.if.placeholder)
