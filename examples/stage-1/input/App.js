@@ -1,4 +1,5 @@
 import {
+  banchUpdate,
   Component,
   Element,
   Space,
@@ -30,10 +31,10 @@ export default class App extends Component {
     /**/ const text4 = Text('Reset', button)
 
     // create updates
-    const name_up = () => {
-      text2.update(name)
-      input.update('value', name)
-    }
+    const name_up = () => banchUpdate(
+      [text2, name],
+      [input, 'value', name],
+    )
 
     // listen events
     input.listen('input', onChange, name_up)

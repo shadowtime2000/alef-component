@@ -1,9 +1,9 @@
 import {
+  banchUpdate,
   Component,
   Element,
   Space,
   Style,
-  StyleId,
   Text
 } from '../../lib/helper.js'
 
@@ -14,42 +14,41 @@ export default class App extends Component {
     // strip types
     let n = 0
 
-    // create style ids
-    const sid = StyleId() // todo(stage-3): get ssr id
+    // create styles
+    const style = Style(id => `
+      /* unused h1 */
+      /*
+        h1 {
+          font-size: 200%;
+        }
+      */
+      p.${id} {
+        color: ${Math.abs(n) >= 10 ? 'red' : 'green'}    
+      }
+      button.${id} {
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        font-weight: bold;
+      }
+    `)
 
     // create nodes
-    const p = Element('p', { className: sid })
+    const p = Element('p', { className: style.id })
     /**/ const text = Text('current count is ', p)
     /**/ const text2 = Text(n, p)
     const s = Space()
-    const button = Element('button', { className: sid })
+    const button = Element('button', { className: style.id })
     /**/ const text3 = Text('-', button)
     const s2 = Space()
-    const button2 = Element('button', { className: sid })
+    const button2 = Element('button', { className: style.id })
     /**/ const text4 = Text('+', button2)
-    const style = Style(sid, id => `
-/* unused h1 */
-/*
-  h1 {
-    font-size: 200%;
-  }
-*/
-p.${id} {
-  color: ${Math.abs(n) >= 10 ? 'red' : 'green'}    
-}
-button.${id} {
-  display: inline-block;
-  width: 24px;
-  height: 24px;
-  font-weight: bold;
-}
-`)
 
     // create updates
-    const n_up = () => {
-      text2.update(n)
-      style.update()
-    }
+    const n_up = () => banchUpdate(
+      [text2, n],
+      style
+    )
 
     // listen events
     button.listen('click', () => { n-- }, n_up)

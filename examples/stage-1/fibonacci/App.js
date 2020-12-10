@@ -1,6 +1,8 @@
 import {
+  banchUpdate,
   Component,
   Element,
+  Memo,
   Space,
   Text
 } from '../../lib/helper.js'
@@ -16,24 +18,26 @@ export default class App extends Component {
     }
 
     // create memos
-    const $sum = () => numbers.reduce((t, n) => t + n, 0)  // dep: numbers
-    const $1 /* {numbers.join(' + ')} */ = () => numbers.join(' + ') // dep: numbers
+    const $sum = Memo(() => numbers.reduce((t, n) => t + n, 0))  // dep: numbers
+    const $1 /* {numbers.join(' + ')} */ = Memo(() => numbers.join(' + ')) // dep: numbers
 
     // create nodes
     const p = Element('p')
     /**/ const text = Text('0 + ', p)
-    /**/ const text2 = Text($1(), p)
+    /**/ const text2 = Text($1.value, p)
     /**/ const text3 = Text(' = ', p)
-    /**/ const text4 = Text($sum(), p)
+    /**/ const text4 = Text($sum.value, p)
     const s = Space()
     const button = Element('button')
     /**/ const text5 = Text('Add a number', button)
 
     // create updates
-    const numbers_up = () => {
-      text2.update($1())
-      text4.update($sum())
-    }
+    const numbers_up = banchUpdate(
+      $1,
+      $sum,
+      [text2, () => $1.value]
+      [text4, () => $sum.value]
+    )
 
     // listen events
     button.listen('click', addNumber, numbers_up)

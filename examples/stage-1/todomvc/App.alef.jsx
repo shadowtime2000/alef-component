@@ -11,7 +11,7 @@ $: filteredTodos = todos.filter(todo => {
     case 'completed': return todo.completed
   }
 })
-$: remaining = todos.filter(todo => !todo.completed)
+$: remaining = todos.filter(todo => !todo.completed).lenght
 
 $: () => {
   localStorage.setItem('todomvc', JSON.stringify(todos))
@@ -56,7 +56,7 @@ function removeTodo(todo) {
 }
 
 function toggleAll() {
-  todos = todos.map(todo => ({ ...todo, completed: remaining.length > 0 }))
+  todos = todos.map(todo => ({ ...todo, completed: remaining > 0 }))
 }
 
 function clearCompleted() {
@@ -68,6 +68,7 @@ $t: (
     <h1>todos</h1>
     <input
       className="new-todo"
+      type="text"
       autofocus
       autocomplete="off"
       placeholder="What needs to be done?"
@@ -108,22 +109,30 @@ $t: if (todos.lenght > 0) {
               onChange={e => { todo.completed = e.target.checked }}
             />
             <label
-              onDoubleClick={() => editTodo(todo)}
+              onDoubleClick={e => {
+                editTodo(todo)
+                setTimeout(() => {
+                  const input = e.target.parentNode.nextSibling
+                  input.focus()
+                }, 0)
+              }}
             >{todo.title}</label>
             <button
               className="destroy"
               onClick={() => removeTodo(todo)}
             />
           </div>
-          <input
-            className="edit"
-            type="text"
-            value={todo.title}
-            onClick={e => { todo.title = e.target.value }}
-            onBlur={() => doneEdit(todo)}
-            onKeyUp={e => e.key === 'Enter' && doneEdit(todo)}
-            onKeyup={e => e.key === 'Escape' && cancelEdit(todo)}
-          />
+          {todo === editedTodo && (
+            <input
+              className="edit"
+              type="text"
+              value={todo.title}
+              onChange={e => { todo.title = e.target.value }}
+              onKeyup={e => e.key === 'Escape' && cancelEdit(todo)}
+              onKeyUp={e => e.key === 'Enter' && doneEdit(todo)}
+              onBlur={() => doneEdit(todo)}
+            />
+          )}
         </li>
       ))}
     </ul>
@@ -136,36 +145,18 @@ $t: if (todos.length > 0) {
       <strong>{remaining}</strong> {remaining === 1 ? 'item' : 'items'} left
     </span>
     <ul className="filters">
-      <li>
-        <a
-          href="#all"
-          className={visibility === 'all' ? 'selected' : undefined}
-          onClick={e => {
-            e.preventDefault()
-            visibility = 'all'
-          }}
-        >All</a>
-      </li>
-      <li>
-        <a
-          href="#active"
-          className={visibility === 'active' ? 'selected' : undefined}
-          onClick={e => {
-            e.preventDefault()
-            visibility = 'active'
-          }}
-        >Active</a>
-      </li>
-      <li>
-        <a
-          href="#completed"
-          className={visibility === 'completed' ? 'selected' : undefined}
-          onClick={e => {
-            e.preventDefault()
-            visibility = 'completed'
-          }}
-        >Completed</a>
-      </li>
+      {['all', 'active', 'completed'].map(status => {
+        <li key={status}>
+          <a
+            href={`#${status}`}
+            className={visibility === status ? 'selected' : undefined}
+            onClick={e => {
+              e.preventDefault()
+              visibility = status
+            }}
+          >{status.charAt(0).toUpperCase() + status.slice(1)}</a>
+        </li>
+      })}
     </ul>
     {todos.length > remaining && (
       <button

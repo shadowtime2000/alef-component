@@ -74,6 +74,9 @@ export class AlefElement {
   update(key, value) {
     const { el } = this
     const nullValue = value === undefined || value === null
+    if (typeof value === 'function') {
+      value = value()
+    }
     switch (key) {
       case 'className':
         if (nullValue) {
@@ -112,14 +115,15 @@ export class AlefElement {
       updates,
     })
   }
-  activate() {
+  mount() {
     if (!this.activated) {
       this.activated = true
       this.nodes.forEach(node => dom.appendNode(this.el, node))
       this.events.forEach(({ name, callback, updates }) => {
         const cb = e => {
+          // todo: push to asynchronous update queue
           if (callback(e) !== false) {
-            updates.forEach(update => update()) // todo: push to asynchronous update queue
+            updates.forEach(update => update())
           }
         }
         this.el.addEventListener(name, cb)
@@ -127,7 +131,7 @@ export class AlefElement {
       })
     }
   }
-  deactivate() {
+  unmount() {
     if (this.activated) {
       this.activated = false
       this.disposes.forEach(dispose => dispose())
@@ -214,7 +218,7 @@ export class ListBlock {
     }
   }
   update() {
-    const items = this.get()
+    const items = Array.isArray(this.get) ? this.get : this.get()
     const newNodes = []
     if (Array.isArray(items)) {
       items.forEach((item, index) => {
@@ -222,12 +226,14 @@ export class ListBlock {
         const key = computeLiKey(index, block.key)
         const prev = this.nodes.find(n => n.item === item || n.key === key)
         if (prev) {
-          prev.index = index
-          prev.key = key
           if (prev.item !== item) {
             prev.item = item
             prev.update(true, item)
+          } else {
+            prev.update()
           }
+          prev.index = index
+          prev.key = key
           newNodes.push(prev)
         } else {
           const { node, update } = block.create()
@@ -237,28 +243,37 @@ export class ListBlock {
     }
     const { parentNode } = this.placeholder
     if (parentNode) {
-      // remove non-existent nodes
+      let indexs = []
       this.nodes.forEach((node) => {
-        if (newNodes.findIndex(newNode => newNode === node) === -1) {
-          console.log('list: removeNode', node)
+        if (newNodes.length === 0 || newNodes.findIndex(newNode => newNode === node) === -1) {
+          // remove non-existent nodes
           dom.removeNode(node.node)
+        } else {
+          indexs.push([indexs.length, node.index])
         }
       })
-      // append new nodes
       newNodes.forEach((newNode) => {
         if (this.nodes.length === 0 || this.nodes.findIndex(node => newNode === node) === -1) {
-          console.log('list: appendNode', newNode)
-          dom.appendNode(parentNode, newNode.node) // todo: fix order
+          // append new nodes
+          dom.appendNode(parentNode, newNode.node)
+          indexs.push([indexs.length, newNode.index])
+        }
+      })
+      // fix order
+      indexs.forEach(([domIndex, treeIndex]) => {
+        const { childNodes } = parentNode
+        if (domIndex !== treeIndex) {
+          const node = childNodes[domIndex]
+          const ref = childNodes[treeIndex + 1]
+          if (ref) {
+            parentNode.insertBefore(node, ref)
+          } else {
+            parentNode.appendChild(node)
+          }
         }
       })
     }
     this.nodes = newNodes
-  }
-  mount() {
-    const { parentNode } = this.placeholder
-    if (parentNode) {
-      this.nodes.forEach(({ node }) => dom.appendNode(parentNode, node))
-    }
   }
   unmount() {
     this.nodes.forEach(({ node }) => dom.removeNode(node))
@@ -284,7 +299,8 @@ export class AlefStyle {
 }
 
 /** Create and return a new style node. */
-export function Style(id, templateFn) {
+export function Style(templateFn) {
+  const id = StyleId() // todo(stage-3): get ssr id
   return new AlefStyle(id, templateFn)
 }
 
@@ -297,6 +313,9 @@ export class AlefText {
     }
   }
   update(text) {
+    if (typeof text === 'function') {
+      text = text()
+    }
     this.node.textContent = text
   }
 }
@@ -311,64 +330,89 @@ export function Space(parent) {
   return new AlefText(' ', parent)
 }
 
+/** Create and return a memo. */
+export function Memo(update) {
+  return {
+    value: update(),
+    update() {
+      return this.value = update()
+    }
+  }
+}
+
+/** Banch update helper. */
+export function banchUpdate(...updates) {
+  updates.forEach((updater, index) => {
+    if (Array.isArray(updater) && updater.length > 0) {
+      updater.shift().update(...updater)
+    } else if (typeof updater === 'object' && updater !== null && typeof updater.update === 'function') {
+      updater.update()
+    } else if (updater !== false) {
+      console.warn(`invald updater(${index}):`, updater)
+    }
+  })
+}
+
+/* Returns a empty callback */
+export function nope() { }
+
 const dom = {
   /** Append the node to DOM */
-  appendNode(root, node) {
+  appendNode(parentNode, node) {
     if (isComponent(node)) {
-      node.nodes.forEach(node => this.appendNode(root, node))
+      node.nodes.forEach(node => dom.appendNode(parentNode, node))
     } else if (node instanceof AlefElement) {
-      root.appendChild(node.el)
-      node.activate()
+      appendEl(parentNode, node.el)
+      node.mount()
     } else if (node instanceof IfBlock) {
-      root.appendChild(node.placeholder)
+      appendEl(parentNode, node.placeholder)
       node.update()
     } else if (node instanceof IfElseBlock) {
-      root.appendChild(node.if.placeholder)
-      root.appendChild(node.else.placeholder)
+      appendEl(parentNode, node.if.placeholder)
+      appendEl(parentNode, node.else.placeholder)
       node.update()
     } else if (node instanceof ListBlock) {
-      root.appendChild(node.placeholder)
-      node.mount()
+      appendEl(parentNode, node.placeholder)
+      node.update()
     } else if (node instanceof AlefStyle) {
-      document.head.appendChild(node.el)
+      appendEl(document.head, node.el)
       node.update()
     } else if (node instanceof AlefText) {
-      root.appendChild(node.node)
+      appendEl(parentNode, node.node)
     }
   },
-  /** insert the node before given anchor. */
-  insertNode(node, anchor) {
-    const { parentNode } = anchor
-    if (parentNode) {
-      if (isComponent(node)) {
-        node.nodes.forEach(node => this.insertNode(node, anchor))
-      } else if (node instanceof AlefElement) {
-        parentNode.insertBefore(node.el, anchor)
-        node.activate()
-      } else if (child instanceof IfBlock) {
-        parentNode.insertBefore(node.placeholder, anchor)
-        node.update()
-      } else if (child instanceof IfElseBlock) {
-        parentNode.insertBefore(node.if.placeholder, anchor)
-        parentNode.insertBefore(node.else.placeholder, anchor)
-        node.update()
-      } else if (node instanceof ListBlock) {
-        parentNode.insertBefore(node.placeholder, anchor)
-        node.mount()
-      } else if (child instanceof AlefStyle) {
-        document.head.appendChild(node.el)
-        node.update()
-      } else if (child instanceof AlefText) {
-        parentNode.insertBefore(node.node, anchor)
-      }
+
+  /** insert the node before given refEl. */
+  insertNode(node, refEl) {
+    if (isComponent(node)) {
+      node.nodes.forEach(node => dom.insertNode(node, refEl))
+    } else if (node instanceof AlefElement) {
+      insertEl(node.el, refEl)
+      node.mount()
+    } else if (child instanceof IfBlock) {
+      insertEl(node.placeholder, refEl)
+      node.update()
+    } else if (child instanceof IfElseBlock) {
+      insertEl(node.if.placeholder, refEl)
+      insertEl(node.else.placeholder, refEl)
+      node.update()
+    } else if (node instanceof ListBlock) {
+      insertEl(node.placeholder, refEl)
+      node.update()
+    } else if (child instanceof AlefStyle) {
+      appendEl(document.head, node.el)
+      node.update()
+    } else if (child instanceof AlefText) {
+      insertEl(node.node, refEl)
     }
   },
+
   /** Remove the node from its parent. */
   removeNode(node) {
     if (isComponent(node)) {
-      node.nodes.forEach(node => this.removeNode(node))
+      node.nodes.forEach(node => dom.removeNode(node))
     } else if (node instanceof AlefElement) {
-      node.deactivate()
+      node.unmount()
       removeEl(node.el)
     } else if (node instanceof IfBlock) {
       node.falsify()
@@ -389,10 +433,24 @@ const dom = {
   }
 }
 
-/** Remove element from DOM. */
+/** Append an element to parent element. */
+function appendEl(parent, el) {
+  parent.appendChild(el)
+}
+
+/** Insert an element to befor ref element. */
+function insertEl(el, refEl) {
+  const { parentNode } = refEl
+  if (parentNode) {
+    parentNode.insertBefore(el, refEl)
+  }
+}
+
+/** Remove the element from DOM. */
 function removeEl(el) {
-  if (el.parentNode) {
-    el.parentNode.removeChild(el)
+  const { parentNode } = el
+  if (parentNode) {
+    parentNode.removeChild(el)
   }
 }
 

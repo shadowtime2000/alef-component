@@ -4,6 +4,7 @@ import {
   Text,
   If,
   IfElse,
+  banchUpdate
 } from '../../../lib/helper.js'
 
 export default class App extends Component {
@@ -42,16 +43,16 @@ export default class App extends Component {
     /***/ const text8 = Text('OFF', button4)
 
     // create updates
-    const show_up = () => {
-      block2.update()
-      block3.update()
-      block4.update()
-      block5.update()
-    }
-    const ok_up = () => {
-      block.update()
-      block6.update()
-    }
+    const show_up = () => banchUpdate(
+      block2,
+      block3,
+      block4,
+      block5
+    )
+    const ok_up = () => banchUpdate(
+      block,
+      block6
+    )
 
     // listen events
     button.listen('click', () => { show = false }, show_up)
