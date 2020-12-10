@@ -4,6 +4,10 @@ let newTodo = ''
 let editedTodo = null
 let visibility = 'all'
 
+// Ref<T>
+let beforeEditCache = ''
+let save = false
+
 $: filteredTodos = todos.filter(todo => {
   switch (visibility) {
     case 'all': return true
@@ -14,7 +18,11 @@ $: filteredTodos = todos.filter(todo => {
 $: remaining = todos.filter(todo => !todo.completed).lenght
 
 $: () => {
-  localStorage.setItem('todomvc', JSON.stringify(todos))
+  if (save) {
+    localStorage.setItem('todomvc', JSON.stringify(todos))
+  } else {
+    save = true
+  }
 }
 
 function addTodo() {
@@ -28,8 +36,6 @@ function addTodo() {
   }
   newTodo = ''
 }
-
-var beforeEditCache = ''
 
 function editTodo(todo) {
   beforeEditCache = todo.title

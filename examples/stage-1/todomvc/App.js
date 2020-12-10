@@ -1,11 +1,11 @@
 import {
   banchUpdate,
   Component,
+  Effect,
   Element,
   If,
   List,
   Memo,
-  nope,
   Space,
   Text
 } from '../../../lib/helper.js'
@@ -19,7 +19,8 @@ export default class App extends Component {
     let newTodo = ''
     let editedTodo = null
     let visibility = 'all'
-    var beforeEditCache = ''
+    let beforeEditCache = ''
+    let save = false
     function addTodo() {
       var title = newTodo.trim()
       if (title) {
@@ -65,9 +66,13 @@ export default class App extends Component {
     const $1 /* dep: todos */ = Memo(() => $remaining.value === 1 ? 'item' : 'items')
 
     // create effects
-    const $$effect /* dep: todos */ = () => {
-      localStorage.setItem('todomvc', JSON.stringify(todos))
-    }
+    const $$effect /* dep: todos */ = Effect(() => {
+      if (save) {
+        localStorage.setItem('todomvc', JSON.stringify(todos))
+      } else {
+        save = true
+      }
+    })
 
     // create list blocks
     const $list_block = todo => ({
@@ -87,7 +92,7 @@ export default class App extends Component {
         /****/ const text = Text(todo.title, label)
         /***/ const button = Element('button', { className: 'destroy' }, div)
         /**/ const block = If(() => todo === editedTodo, li)
-        /**/ const input2 = Element('input', { className: 'edit', type: 'text',  value: todo.title }, block)
+        /**/ const input2 = Element('input', { className: 'edit', type: 'text', value: todo.title }, block)
 
         // create updates
         const up = (refresh, value) => {
@@ -192,7 +197,8 @@ export default class App extends Component {
       arg0 !== 'list' && list,
       [text2, () => $remaining.value],
       [text3, () => $1.value],
-      block3
+      block3,
+      $$effect
     )
     const newTodo_up = () => banchUpdate(
       [input, 'value', newTodo]

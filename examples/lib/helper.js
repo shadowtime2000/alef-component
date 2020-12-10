@@ -4,6 +4,7 @@
 export class Component {
   nodes = []
   slots = []
+  effects = []
   listeners = new Map()
   mounted = false
   constructor(props = {}) {
@@ -19,6 +20,7 @@ export class Component {
     if (!this.mounted) {
       this.mounted = true
       this.nodes.forEach(node => dom.appendNode(el, node))
+      this.effects.forEach(effect => effect.update())
     }
   }
   unmount() {
@@ -28,7 +30,7 @@ export class Component {
     }
   }
   onMount(...effects) {
-
+    this.effects.push(...effects)
   }
   update(key, value) {
     this.props[key] = value
@@ -337,6 +339,13 @@ export function Memo(update) {
     update() {
       return this.value = update()
     }
+  }
+}
+
+/** Create and return a effect. */
+export function Effect(update) {
+  return {
+    update
   }
 }
 
