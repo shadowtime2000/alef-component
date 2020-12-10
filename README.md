@@ -34,7 +34,8 @@ This draft is parted in three stages, currently accept any new feature and impro
 - Stage III ([RFCs](https://github.com/alephjs/alef-component-draft/issues/5))
   - **Asynchronous Component** - wait for data fetching
   - **Error Boundary** - catch errors in child component tree
-  - **SSR** - server side rendering 
+  - **SSR** - server side rendering
+  - **Precompile** - transfom Alef Component code before AOT compilation
 
 ## Run Draft
 
