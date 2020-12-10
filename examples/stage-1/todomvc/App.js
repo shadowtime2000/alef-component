@@ -21,7 +21,7 @@ export default class App extends Component {
       var title = newTodo.trim()
       if (title) {
         todos.push({
-          id: Date.now() + '.' + Math.random(),
+          id: Date.now() + Math.random().toFixed(3),
           completed: false,
           title,
         })
@@ -66,46 +66,52 @@ export default class App extends Component {
     }
 
     // create list blocks
-    const $list_block = todo => {
-      // create memos
-      const $1 = () => ['todo', todo === editedTodo && 'editing'].filter(Boolean).join(' ')
+    const $list_block = todo => ({
+      create: () => {
+        // create memos
+        const $1 = () => [
+          'todo',
+          todo.completed && 'completed',
+          todo === editedTodo && 'editing'
+        ].filter(Boolean).join(' ')
 
-      // create nodes
-      const li = Element('li', { className: $1() })
-      /**/ const div = Element('div', { className: 'view' }, li)
-      /***/ const input = Element('input', { id: 'toggle-all', className: 'toggle-all', type: 'checkbox', checked: todo.completed }, div)
-      /***/ const label = Element('label', div)
-      /****/ const text = Text(todo.title, label)
-      /***/ const button = Element('button', { className: 'destroy' }, div)
-      /**/ const input2 = Element('input', { className: 'edit', type: 'text', value: todo.title }, li)
+        // create nodes
+        const li = Element('li', { className: $1() })
+        /**/ const div = Element('div', { className: 'view' }, li)
+        /***/ const input = Element('input', { className: 'toggle', type: 'checkbox', checked: todo.completed }, div)
+        /***/ const label = Element('label', div)
+        /****/ const text = Text(todo.title, label)
+        /***/ const button = Element('button', { className: 'destroy' }, div)
+        /**/ const input2 = Element('input', { className: 'edit', type: 'text', value: todo.title }, li)
 
-      // create updates
-      const up = () => {
-        li.update('className', $1())
-        input.update('checked', todo.completed)
-        text.update(todo.title)
-        input2.update('value', todo.title)
-      }
-      const _editedTodo_up = () => {
-        editedTodo_up()
-        li.update('className', $1())
-      }
+        // create updates
+        const up = (refresh, value) => {
+          if (refresh === true) {
+            todo = value
+          }
+          li.update('className', $1())
+          input.update('checked', todo.completed)
+          text.update(todo.title)
+          input2.update('value', todo.title)
+        }
+        const _editedTodo_up = () => {
+          editedTodo_up()
+          li.update('className', $1())
+        }
 
-      // listen events
-      input.listen('change', e => { todo.completed = e.target.checked }, up)
-      label.listen('dblclick', () => editTodo(todo), up, _editedTodo_up)
-      button.listen('click', () => removeTodo(todo), todos_up)
-      input2.listen('input', e => todo.title = e.target.value, up)
-      input2.listen('blur', () => doneEdit(todo), up, _editedTodo_up)
-      input2.listen('keyup', () => e.key === 'Enter' && doneEdit(todo), up, _editedTodo_up)
-      input2.listen('keyup', () => e.key === 'Escape' && cancelEdit(todo), up, _editedTodo_up)
+        // listen events
+        input.listen('change', e => { todo.completed = e.target.checked }, up, todos_up)
+        label.listen('dblclick', () => editTodo(todo), up, _editedTodo_up)
+        button.listen('click', () => removeTodo(todo), todos_up)
+        input2.listen('input', e => todo.title = e.target.value, up, todos_up)
+        input2.listen('blur', () => doneEdit(todo), up, todos_up, _editedTodo_up)
+        input2.listen('keyup', () => e.key === 'Enter' && doneEdit(todo), up, todos_up, _editedTodo_up)
+        input2.listen('keyup', () => e.key === 'Escape' && cancelEdit(todo), up, todos_up, _editedTodo_up)
 
-      return {
-        node: li,
-        key: todo.id,
-        up
-      }
-    }
+        return { node: li, update: up }
+      },
+      key: todo.id,
+    })
 
     // create nodes 
     const header = Element('header', { className: 'header' })
@@ -114,7 +120,7 @@ export default class App extends Component {
     /**/ const input = Element('input', { className: 'new-todo', autofocus: true, autocomplete: 'off', placeholder: 'What needs to be done?', value: newTodo }, header)
     const block = If(() => todos.length > 0)
     /**/ const section = Element('section', { className: 'main' }, block)
-    /***/ const input2 = Element('input', { id: 'toggle-all', className: 'toggle-all', type: 'checkbox', checked: $remaining() === 0 }, section)
+    /***/ const input2 = Element('input', { id: 'toggle-all', className: 'toggle-all', type: 'checkbox', checked: $remaining().length === 0 }, section)
     /***/ const label = Element('label', { for: 'toggle-all' }, section)
     /***/ const ul = Element('ul', { className: 'todo-list' }, section)
     /***/ const list = List(() => $filteredTodos(), $list_block, ul)
@@ -123,7 +129,7 @@ export default class App extends Component {
 
     // create updates
     const todos_up = () => {
-      input2.update('checked', $remaining())
+      input2.update('checked', $remaining().length === 0)
       block.update()
       block2.update()
       list.update()
@@ -142,10 +148,10 @@ export default class App extends Component {
     input.listen('input', e => newTodo = e.target.value, newTodo_up)
     input.listen('keyup', e => e.key === 'Enter' && addTodo(), newTodo_up, todos_up)
     input2.listen('change', () => {
-      todos.forEach(todo => {
-        todo.completed = value
-      })
+      todos = todos.map(todo => ({ ...todo, completed: $remaining().length > 0 }))
     }, todos_up)
+
+    this.onMount($$effect)
 
     this.register(header, block, block2)
   }

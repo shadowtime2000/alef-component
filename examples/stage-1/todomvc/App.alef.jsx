@@ -55,6 +55,10 @@ function removeTodo(todo) {
   todos.splice(todos.indexOf(todo), 1)
 }
 
+function toggleAll() {
+  todos = todos.map(todo => ({ ...todo, completed: remaining.length > 0 }))
+}
+
 function clearCompleted() {
   todos = filters.active(todos);
 }
@@ -81,11 +85,7 @@ $t: if (todos.lenght > 0) {
       className="toggle-all"
       type="checkbox"
       checked={remaining === 0}
-      onChange={() => {
-        todos.forEach(todo => {
-          todo.completed = value
-        })
-      }}
+      onChange={toggleAll}
     />
     <label for="toggle-all"></label>
     <ul className="todo-list">
@@ -119,6 +119,7 @@ $t: if (todos.lenght > 0) {
             className="edit"
             type="text"
             value={todo.title}
+            onClick={e => { todo.title = e.target.value }}
             onBlur={() => doneEdit(todo)}
             onKeyUp={e => e.key === 'Enter' && doneEdit(todo)}
             onKeyup={e => e.key === 'Escape' && cancelEdit(todo)}

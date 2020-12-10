@@ -92,6 +92,10 @@ export class AlefElement {
           }
         }
         break
+      case 'disabled':
+      case 'checked':
+        el[key] = !!value && value !== 'false'
+        break
       default:
         if (nullValue) {
           el.removeAttribute(key)
@@ -198,23 +202,6 @@ export function IfElse(validate, parent) {
   return new IfElseBlock(validate, parent)
 }
 
-/** List node for List block. */
-export class ListNode {
-  constructor(item, index, { node, key, up }) {
-    this.item = item
-    this.index = index
-    this.node = node
-    if (typeof key === 'string' && key.length > 0) {
-      this.key = '$' + key
-    } else if (typeof key === 'number' && !Number.isNaN(key)) {
-      this.key = '%' + key.toString(16)
-    } else {
-      this.key = '#' + key.toString(16)
-    }
-    this.update = up
-  }
-}
-
 /** List block for map rendering. */
 export class ListBlock {
   nodes = []
@@ -222,16 +209,59 @@ export class ListBlock {
   constructor(get, block, parent) {
     this.get = get
     this.block = block
-    const items = get()
-    if (Array.isArray(items)) {
-      this.nodes = items.map((item, index) => new ListNode(item, index, block(item)))
-    }
     if (parent) {
       parent.appendChild(this)
     }
   }
   update() {
-    this.nodes.forEach(node => node.update())
+    const items = this.get()
+    const newNodes = []
+    if (Array.isArray(items)) {
+      items.forEach((item, index) => {
+        const block = this.block(item)
+        const key = computeLiKey(index, block.key)
+        const prev = this.nodes.find(n => n.item === item || n.key === key)
+        if (prev) {
+          prev.index = index
+          prev.key = key
+          if (prev.item !== item) {
+            prev.item = item
+            prev.update(true, item)
+          }
+          newNodes.push(prev)
+        } else {
+          const { node, update } = block.create()
+          newNodes.push({ item, index, key, node, update })
+        }
+      })
+    }
+    const { parentNode } = this.placeholder
+    if (parentNode) {
+      // remove non-existent nodes
+      this.nodes.forEach((node) => {
+        if (newNodes.findIndex(newNode => newNode === node) === -1) {
+          console.log('list: removeNode', node)
+          dom.removeNode(node.node)
+        }
+      })
+      // append new nodes
+      newNodes.forEach((newNode) => {
+        if (this.nodes.length === 0 || this.nodes.findIndex(node => newNode === node) === -1) {
+          console.log('list: appendNode', newNode)
+          dom.appendNode(parentNode, newNode.node) // todo: fix order
+        }
+      })
+    }
+    this.nodes = newNodes
+  }
+  mount() {
+    const { parentNode } = this.placeholder
+    if (parentNode) {
+      this.nodes.forEach(({ node }) => dom.appendNode(parentNode, node))
+    }
+  }
+  unmount() {
+    this.nodes.forEach(({ node }) => dom.removeNode(node))
   }
 }
 
@@ -296,6 +326,9 @@ const dom = {
       root.appendChild(node.if.placeholder)
       root.appendChild(node.else.placeholder)
       node.update()
+    } else if (node instanceof ListBlock) {
+      root.appendChild(node.placeholder)
+      node.mount()
     } else if (node instanceof AlefStyle) {
       document.head.appendChild(node.el)
       node.update()
@@ -319,6 +352,9 @@ const dom = {
         parentNode.insertBefore(node.if.placeholder, anchor)
         parentNode.insertBefore(node.else.placeholder, anchor)
         node.update()
+      } else if (node instanceof ListBlock) {
+        parentNode.insertBefore(node.placeholder, anchor)
+        node.mount()
       } else if (child instanceof AlefStyle) {
         document.head.appendChild(node.el)
         node.update()
@@ -342,6 +378,9 @@ const dom = {
       node.else.falsify()
       removeEl(node.if.placeholder)
       removeEl(node.else.placeholder)
+    } else if (node instanceof ListBlock) {
+      node.unmount()
+      removeEl(node.placeholder)
     } else if (node instanceof AlefStyle) {
       removeEl(node.el)
     } else if (node instanceof AlefText) {
@@ -363,6 +402,20 @@ function isComponent(obj) {
     return false
   }
   return obj instanceof Component || obj.__proto__ instanceof Component
+}
+
+/**
+ * Compute list item key, use index instead of the key
+ * when it is not string or number
+ */
+function computeLiKey(index, key) {
+  if (typeof key === 'string' && key.length > 0) {
+    return '$' + key
+  } else if (typeof key === 'number' && !Number.isNaN(key)) {
+    return '%' + key.toString(16)
+  } else {
+    return '#' + index.toString(16)
+  }
 }
 
 const idTable = '1234567890abcdefghijklmnopqrstuvwxyz'
