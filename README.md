@@ -36,6 +36,7 @@ This draft is parted in three stages, currently accept any new feature and impro
   - **Error Boundary** - catch errors in child component tree
   - **SSR** - server side rendering
   - **Precompile** - transfom Alef Component code before AOT compilation
+  - **Hot Refresh** - refresh component without data losing
 
 ## Run Draft
 
