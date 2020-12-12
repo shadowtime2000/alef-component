@@ -14,7 +14,7 @@ export default class App extends Component {
     // strip types 
     let numbers /* Array */ = [1]
     function addNumber() {
-      numbers.push((numbers[numbers.length - 2] || 0) + numbers[numbers.length - 1]) // dirty data: numbers
+      numbers.push((numbers[numbers.length - 2] || 0) + numbers[numbers.length - 1]) // dirty data: numbers 
     }
 
     // create memos
@@ -32,12 +32,14 @@ export default class App extends Component {
     /**/ const text5 = Text('Add a number', button)
 
     // create updates
-    const numbers_up = banchUpdate(
-      $1,
-      $sum,
-      [text2, () => $1.value]
-      [text4, () => $sum.value]
-    )
+    const numbers_up = () =>  {
+      banchUpdate(
+        $1,
+        $sum,
+        [text2, () => $1.value],
+        [text4, () => $sum.value]
+      )
+    }
 
     // listen events
     button.listen('click', addNumber, numbers_up)
