@@ -63,7 +63,7 @@ export default class App extends Component {
         const $1 = Memo(() => name === component)
 
         // create nodes
-        const button = Element('button', { disabled: $1.value })
+        const button = Element('button', { style: { display: 'inline', marginLeft: 3 }, disabled: $1.value })
         /**/ const text = Text(name, button)
 
         // create updates

@@ -130,6 +130,30 @@ export class AlefElement {
           el.className = String(value)
         }
         break
+      case 'style':
+        if (typeof value === 'string') {
+          el.setAttribute('style', value)
+        } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          Object.keys(value).forEach(key => {
+            let styleValue = value[key]
+            if (typeof styleValue === 'number' && !Number.isNaN(styleValue)) {
+              let unit = 'px'
+              switch (key) {
+                case 'opacity':
+                case 'lineHeight':
+                  unit = ''
+                  break
+              }
+              styleValue = styleValue.toFixed(6).replace(/\.0+$/, '') + unit
+            } else if (typeof styleValue === 'string') {
+              styleValue = styleValue.trim()
+            } else {
+              return
+            }
+            el.style[key.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase()] = styleValue
+          })
+        }
+        break
       case 'value':
         if (nullValue) {
           el.value = ''

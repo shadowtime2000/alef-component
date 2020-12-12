@@ -23,9 +23,9 @@ $t:
   <span>Show Component: </span>
   {['Hello', 'A', 'B'].map(name => (
     <button
-      style={{ display: 'inline', marginLeft: 6 }}
-      onClick={() => component = name}
+      style={{ display: 'inline', marginLeft: 3}}
       disabled={name === component}
+      onClick={() => component = name}
       key={name}
     >{name}</button>
   ))}
