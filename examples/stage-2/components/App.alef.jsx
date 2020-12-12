@@ -1,15 +1,25 @@
 import Hello from './Hello.alef'
+import A from './A.alef'
+import B from './B.alef'
 
 let name = 'World'
+let component = 'Hello'
 
-function onChange(e) {
-  name = e.target.value
+$t: if (component === 'Hello') {
+  <Hello name={name} />
+} else if (component === 'A') {
+  <A />
+} else if (component === 'B') {
+  <B />
 }
 
-function reset() {
-  name = 'World'
-}
+$t:
+<p>
+  Show Component:
+  {['Hello', 'A', 'B'].map(name => (
+    <button onClick={() => component = name} key={name} disabled={name === component}>{name}</button>
+  ))}
+</p>
 
-$t: <Hello name={name} />
-$t: <input value={name} onChange={onChange} />
-$t: <button onClick={reset}>Reset</button>
+$t: <input value={e => name = e.target.value} onChange={onChange} />
+$t: <button onClick={() => name = 'World'}>Reset</button>

@@ -221,8 +221,10 @@ export default class App extends Component {
     }, todos_up)
     button.listen('click', clearCompleted, todos_up)
 
+    // listen effects
     this.onMount($$effect)
 
+    // register nodes
     this.register(header, block, block2)
   }
 }

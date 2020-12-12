@@ -1,10 +1,11 @@
 /* Alef Component Helpers */
 
-/** Alef basic component class. */
+/** Alef component wrapper. */
 export class Component {
   nodes = []
   slots = []
   effects = []
+  disposes = []
   listeners = new Map()
   mounted = false
   constructor(props = {}) {
@@ -13,24 +14,30 @@ export class Component {
   register(...nodes) {
     this.nodes = nodes
   }
+  onMount(...effects) {
+    this.effects.push(...effects)
+  }
   appendChild(slot) {
     this.slots.push(slot)
   }
-  mount(el) {
+  mount(el, refEl) {
     if (!this.mounted) {
       this.mounted = true
-      this.nodes.forEach(node => dom.appendNode(el, node))
-      this.effects.forEach(effect => effect.update())
+      if (refEl) {
+        this.nodes.forEach(node => dom.insertNode(node, refEl))
+      } else {
+        this.nodes.forEach(node => dom.appendNode(el, node))
+      }
+      this.disposes = this.effects.map(effect => effect.update()).filter(isFunction)
     }
   }
   unmount() {
     if (this.mounted) {
       this.mounted = false
+      this.disposes.forEach(dispose => dispose())
+      this.disposes = []
       this.nodes.forEach(node => dom.removeNode(node))
     }
-  }
-  onMount(...effects) {
-    this.effects.push(...effects)
   }
   update(key, value) {
     this.props[key] = value
@@ -44,6 +51,15 @@ export class Component {
     }
     a.push(...callbacks)
   }
+}
+
+/** Create and return a new component. */
+export function New(Component, props, parent) {
+  const component = new Component(props)
+  if (isComponent(parent) || parent instanceof AlefElement || parent instanceof IfBlock) {
+    parent.appendChild(component)
+  }
+  return component
 }
 
 /** Alef element node. */
@@ -73,9 +89,33 @@ export class AlefElement {
       console.warn(this.el.tagName, 'is closed')
     }
   }
+  mount() {
+    if (!this.activated) {
+      this.activated = true
+      this.nodes.forEach(node => dom.appendNode(this.el, node))
+      this.events.forEach(({ name, callback, updates }) => {
+        const cb = e => {
+          // todo: push to asynchronous update queue
+          if (callback(e) !== false) {
+            updates.forEach(update => update())
+          }
+        }
+        this.el.addEventListener(name, cb)
+        this.disposes.push(() => this.el.removeEventListener(name, cb))
+      })
+    }
+  }
+  unmount() {
+    if (this.activated) {
+      this.activated = false
+      this.disposes.forEach(dispose => dispose())
+      this.disposes = []
+      this.nodes.forEach(node => dom.removeNode(node))
+    }
+  }
   update(key, value) {
     const { el } = this
-    if (typeof value === 'function') {
+    if (isFunction(value)) {
       value = value()
     }
     const nullValue = value === undefined || value === null
@@ -118,30 +158,6 @@ export class AlefElement {
       callback,
       updates,
     })
-  }
-  mount() {
-    if (!this.activated) {
-      this.activated = true
-      this.nodes.forEach(node => dom.appendNode(this.el, node))
-      this.events.forEach(({ name, callback, updates }) => {
-        const cb = e => {
-          // todo: push to asynchronous update queue
-          if (callback(e) !== false) {
-            updates.forEach(update => update())
-          }
-        }
-        this.el.addEventListener(name, cb)
-        this.disposes.push(() => this.el.removeEventListener(name, cb))
-      })
-    }
-  }
-  unmount() {
-    if (this.activated) {
-      this.activated = false
-      this.disposes.forEach(dispose => dispose())
-      this.disposes = []
-      this.nodes.forEach(node => dom.removeNode(node))
-    }
   }
 }
 
@@ -276,12 +292,11 @@ export class ListBlock {
       const domStartIndex = placeholderIndex - newNodes.length
       indexs.forEach(([domIndex, treeIndex]) => {
         if (domIndex !== treeIndex) {
-          const realDomIndex = domStartIndex + domIndex
-          const node = childNodes.item(realDomIndex)
-          moving.push([node, realDomIndex, domStartIndex + treeIndex])
+          const node = childNodes.item(domStartIndex + domIndex)
+          moving.push([node, domStartIndex + treeIndex])
         }
       })
-      moving.forEach(([node, domIndex, treeIndex]) => {
+      moving.forEach(([node, treeIndex]) => {
         if (node !== childNodes.item(treeIndex)) {
           parentNode.insertBefore(node, childNodes.item(treeIndex + 1))
         }
@@ -327,7 +342,7 @@ export class AlefText {
     }
   }
   update(text) {
-    if (typeof text === 'function') {
+    if (isFunction(text)) {
       text = text()
     }
     this.node.textContent = text
@@ -366,10 +381,8 @@ export function banchUpdate(...updates) {
   updates.forEach((updater, index) => {
     if (Array.isArray(updater) && updater.length > 0) {
       updater.shift().update(...updater)
-    } else if (typeof updater === 'object' && updater !== null && typeof updater.update === 'function') {
-      updater.update()
     } else if (updater !== false) {
-      console.warn(`invald updater(${index}):`, updater)
+      updater.update()
     }
   })
 }
@@ -381,7 +394,7 @@ const dom = {
   /** Append the node to DOM */
   appendNode(parentNode, node) {
     if (isComponent(node)) {
-      node.nodes.forEach(node => dom.appendNode(parentNode, node))
+      node.mount(parentNode)
     } else if (node instanceof AlefElement) {
       appendEl(parentNode, node.el)
       node.mount()
@@ -406,7 +419,7 @@ const dom = {
   /** insert the node before given refEl. */
   insertNode(node, refEl) {
     if (isComponent(node)) {
-      node.nodes.forEach(node => dom.insertNode(node, refEl))
+      node.mount(undefined, refEl)
     } else if (node instanceof AlefElement) {
       insertEl(node.el, refEl)
       node.mount()
@@ -431,7 +444,7 @@ const dom = {
   /** Remove the node from its parent. */
   removeNode(node) {
     if (isComponent(node)) {
-      node.nodes.forEach(node => dom.removeNode(node))
+      node.unmount()
     } else if (node instanceof AlefElement) {
       node.unmount()
       removeEl(node.el)
@@ -481,6 +494,11 @@ function isComponent(obj) {
     return false
   }
   return obj instanceof Component || obj.__proto__ instanceof Component
+}
+
+/** Check object whether is a function. */
+function isFunction(obj) {
+  return typeof obj === 'function'
 }
 
 /**

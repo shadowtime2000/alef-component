@@ -14,7 +14,7 @@ export default class Hello extends Component {
 
     // create styles
     const style = Style(id => `
-      p {
+      p.${id} {
         padding: 12px;
         border: 1px dashed #999;
       }
