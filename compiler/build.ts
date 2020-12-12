@@ -1,0 +1,1 @@
+/* Build alef component comilper to WASM package */
