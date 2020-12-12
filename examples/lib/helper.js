@@ -56,7 +56,7 @@ export class Component {
 /** Create and return a new component. */
 export function New(Component, props, parent) {
   const component = new Component(props)
-  if (isComponent(parent) || parent instanceof AlefElement || parent instanceof IfBlock) {
+  if (parent) {
     parent.appendChild(component)
   }
   return component
@@ -70,15 +70,16 @@ export class AlefElement {
   activated = false
   isClosed = false
   constructor(name, props, parent) {
+    this.name = name
     this.el = document.createElement(name)
-    if (isComponent(props) || props instanceof AlefElement || props instanceof IfBlock) {
+    if (isComponent(props) || props instanceof AlefElement || props instanceof AlefFragment) {
       props.appendChild(this)
     } else if (typeof props === 'object' || props !== null) {
       for (const key in props) {
         this.update(key, props[key])
       }
     }
-    if (isComponent(parent) || parent instanceof AlefElement || parent instanceof IfBlock) {
+    if (parent) {
       parent.appendChild(this)
     }
   }
@@ -86,13 +87,12 @@ export class AlefElement {
     if (!this.isClosed) {
       this.nodes.push(child)
     } else {
-      console.warn(this.el.tagName, 'is closed')
+      throw new Error(this.name + ' is closed.')
     }
   }
-  mount() {
+  activate() {
     if (!this.activated) {
       this.activated = true
-      this.nodes.forEach(node => dom.appendNode(this.el, node))
       this.events.forEach(({ name, callback, updates }) => {
         const cb = e => {
           // todo: push to asynchronous update queue
@@ -103,9 +103,10 @@ export class AlefElement {
         this.el.addEventListener(name, cb)
         this.disposes.push(() => this.el.removeEventListener(name, cb))
       })
+      this.nodes.forEach(node => dom.appendNode(this.el, node))
     }
   }
-  unmount() {
+  deactivate() {
     if (this.activated) {
       this.activated = false
       this.disposes.forEach(dispose => dispose())
@@ -166,19 +167,37 @@ export function Element(name, props, parent) {
   return new AlefElement(name, props, parent)
 }
 
-/** If block to handle conditional rendering. */
-export class IfBlock {
+/** Alef fragment node. */
+export class AlefFragment {
   nodes = []
   placeholder = document.createTextNode('')
-  isTrue = false
-  constructor(validate, parent) {
-    this.validate = validate
+  constructor(parent) {
     if (parent) {
       parent.appendChild(this)
     }
   }
   appendChild(child) {
     this.nodes.push(child)
+  }
+}
+
+/** Create and return a new fragment. */
+export function Fragment(parent) {
+  return new AlefFragment(parent)
+}
+
+/** If block to handle conditional rendering. */
+export class IfBlock {
+  placeholder = document.createTextNode('')
+  block = null
+  isTrue = false
+  constructor(validate, init, keepAlive, parent) {
+    this.validate = validate
+    this.init = init
+    this.keepAlive = keepAlive
+    if (parent) {
+      parent.appendChild(this)
+    }
   }
   update() {
     if (this.validate()) {
@@ -190,34 +209,54 @@ export class IfBlock {
   truify() {
     if (!this.isTrue) {
       this.isTrue = true
-      this.nodes.forEach(node => dom.insertNode(node, this.placeholder))
+      if (this.block === null) {
+        this.block = this.init()
+      }
+      dom.insertNode(this.block.node, this.placeholder)
     }
   }
   falsify() {
     if (this.isTrue) {
       this.isTrue = false
-      this.nodes.forEach(node => dom.removeNode(node))
+      const block = this.block
+      if (block !== null) {
+        if (!this.keepAlive) {
+          this.block = null
+        }
+        block.dispose && block.dispose()
+        dom.removeNode(block.node)
+      }
     }
   }
 }
 
 /** Create and return a new if block. */
-export function If(validate, parent) {
-  return new IfBlock(validate, parent)
+export function If(validate, init, keepAlive, parent) {
+  return new IfBlock(validate, init, keepAlive, parent)
 }
 
 /** If-Else block to handle conditional rendering. */
 export class IfElseBlock {
-  constructor(validate, parent) {
-    this.if = new IfBlock(validate)
-    this.else = new IfBlock(() => !validate())
-    if (parent) {
-      parent.appendChild(this)
-    }
+  currentStep = null
+  constructor(steps, keepAlive, parent) {
+    this.steps = steps.map(([validate, init]) => If(validate, init, keepAlive, parent))
+  }
+  current() {
+    return this.currentStep.block
   }
   update() {
-    this.if.update()
-    this.else.update()
+    let hasTrue = false
+    this.steps.forEach(step => {
+      if (hasTrue) {
+        step.falsify()
+      } else {
+        step.update()
+        hasTrue = step.isTrue
+        if (hasTrue) {
+          this.currentStep = step
+        }
+      }
+    })
   }
 }
 
@@ -228,23 +267,23 @@ export function IfElse(validate, parent) {
 
 /** List block for map rendering. */
 export class ListBlock {
-  nodes = []
+  blocks = []
   placeholder = document.createTextNode('')
-  constructor(get, block, parent) {
-    this.get = get
-    this.block = block
+  constructor(items, init, parent) {
+    this.items = items
+    this.init = init
     if (parent) {
       parent.appendChild(this)
     }
   }
   update() {
-    const items = Array.isArray(this.get) ? this.get : this.get()
-    const newNodes = []
+    const items = Array.isArray(this.items) ? this.items : this.items()
+    const newBlocks = []
     if (Array.isArray(items)) {
       items.forEach((item, index) => {
-        const block = this.block(item)
-        const key = computeLiKey(index, block.key)
-        const prev = this.nodes.find(n => n.item === item || n.key === key)
+        const { create, key: jsxKey } = this.init(item)
+        const key = computeLiKey(index, jsxKey)
+        const prev = this.blocks.find(n => n.item === item || n.key === key)
         if (prev) {
           if (prev.item !== item) {
             prev.item = item
@@ -254,27 +293,26 @@ export class ListBlock {
           }
           prev.index = index
           prev.key = key
-          newNodes.push(prev)
+          newBlocks.push(prev)
         } else {
-          const { node, update } = block.create()
-          newNodes.push({ item, index, key, node, update })
+          newBlocks.push({ ...create(), item, index, key, })
         }
       })
     }
     const { parentNode } = this.placeholder
     if (parentNode) {
       const indexs = []
-      this.nodes.forEach((node) => {
-        if (newNodes.length === 0 || newNodes.findIndex(newNode => newNode === node) === -1) {
-          // remove non-existent nodes
+      this.blocks.forEach((node) => {
+        if (newBlocks.length === 0 || newBlocks.findIndex(newNode => newNode === node) === -1) {
+          // remove non-existent blocks
           dom.removeNode(node.node)
         } else {
           indexs.push([indexs.length, node.index])
         }
       })
-      newNodes.forEach((newNode) => {
-        if (this.nodes.length === 0 || this.nodes.findIndex(node => newNode === node) === -1) {
-          // append new nodes
+      newBlocks.forEach((newNode) => {
+        if (this.blocks.length === 0 || this.blocks.findIndex(node => newNode === node) === -1) {
+          // append new blocks
           dom.insertNode(newNode.node, this.placeholder)
           indexs.push([indexs.length, newNode.index])
         }
@@ -289,7 +327,7 @@ export class ListBlock {
           break
         }
       }
-      const domStartIndex = placeholderIndex - newNodes.length
+      const domStartIndex = placeholderIndex - newBlocks.length
       indexs.forEach(([domIndex, treeIndex]) => {
         if (domIndex !== treeIndex) {
           const node = childNodes.item(domStartIndex + domIndex)
@@ -302,35 +340,20 @@ export class ListBlock {
         }
       })
     }
-    this.nodes = newNodes
+    this.blocks = newBlocks
   }
   unmount() {
-    this.nodes.forEach(({ node }) => dom.removeNode(node))
+    this.blocks.forEach(({ node, dispose }) => {
+      dispose && dispose()
+      dom.removeNode(node)
+    })
+    this.blocks = []
   }
 }
 
 /** Create and return a new list block. */
-export function List(get, block, parent) {
-  return new ListBlock(get, block, parent)
-}
-
-/** Alef style node to apply style. */
-export class AlefStyle {
-  el = document.createElement('style')
-  constructor(id, templateFn) {
-    this.id = id
-    this.templateFn = templateFn
-    this.el.setAttribute('id', 'alef-' + id)
-  }
-  update() {
-    this.el.innerHTML = this.templateFn(this.id)
-  }
-}
-
-/** Create and return a new style node. */
-export function Style(templateFn) {
-  const id = StyleId() // todo(stage-3): get ssr id
-  return new AlefStyle(id, templateFn)
+export function List(items, init, parent) {
+  return new ListBlock(items, init, parent)
 }
 
 /** Alef text node to display text. */
@@ -359,6 +382,25 @@ export function Space(parent) {
   return new AlefText(' ', parent)
 }
 
+/** Alef style node to apply style. */
+export class AlefStyle {
+  el = document.createElement('style')
+  constructor(id, templateFn) {
+    this.id = id
+    this.templateFn = templateFn
+    this.el.setAttribute('id', 'alef-' + id)
+  }
+  update() {
+    this.el.innerHTML = this.templateFn(this.id)
+  }
+}
+
+/** Create and return a new style node. */
+export function Style(templateFn) {
+  const id = StyleId() // todo(stage-3): get ssr id
+  return new AlefStyle(id, templateFn)
+}
+
 /** Create and return a memo. */
 export function Memo(update) {
   return {
@@ -378,10 +420,10 @@ export function Effect(update) {
 
 /** Banch update helper. */
 export function banchUpdate(...updates) {
-  updates.forEach((updater, index) => {
+  updates.forEach((updater) => {
     if (Array.isArray(updater) && updater.length > 0) {
       updater.shift().update(...updater)
-    } else if (updater !== false) {
+    } else if (typeof updater === 'object' && updater !== null && isFunction(updater.update)) {
       updater.update()
     }
   })
@@ -395,24 +437,26 @@ const dom = {
   appendNode(parentNode, node) {
     if (isComponent(node)) {
       node.mount(parentNode)
+    } else if (node instanceof AlefFragment) {
+      appendEl(parentNode, node.placeholder)
+      node.nodes.forEach(childNode => dom.insertNode(childNode, node.placeholder))
     } else if (node instanceof AlefElement) {
       appendEl(parentNode, node.el)
-      node.mount()
+      node.activate()
     } else if (node instanceof IfBlock) {
       appendEl(parentNode, node.placeholder)
       node.update()
     } else if (node instanceof IfElseBlock) {
-      appendEl(parentNode, node.if.placeholder)
-      appendEl(parentNode, node.else.placeholder)
+      node.steps.forEach(step => appendEl(parentNode, step.placeholder))
       node.update()
     } else if (node instanceof ListBlock) {
       appendEl(parentNode, node.placeholder)
       node.update()
+    } else if (node instanceof AlefText) {
+      appendEl(parentNode, node.node)
     } else if (node instanceof AlefStyle) {
       appendEl(document.head, node.el)
       node.update()
-    } else if (node instanceof AlefText) {
-      appendEl(parentNode, node.node)
     }
   },
 
@@ -420,24 +464,26 @@ const dom = {
   insertNode(node, refEl) {
     if (isComponent(node)) {
       node.mount(undefined, refEl)
+    } else if (node instanceof AlefFragment) {
+      insertEl(node.placeholder, refEl)
+      node.nodes.forEach(childNode => dom.insertNode(childNode, node.placeholder))
     } else if (node instanceof AlefElement) {
       insertEl(node.el, refEl)
-      node.mount()
+      node.activate()
     } else if (node instanceof IfBlock) {
       insertEl(node.placeholder, refEl)
       node.update()
     } else if (node instanceof IfElseBlock) {
-      insertEl(node.if.placeholder, refEl)
-      insertEl(node.else.placeholder, refEl)
+      node.steps.forEach(step => insertEl(step.placeholder, refEl))
       node.update()
     } else if (node instanceof ListBlock) {
       insertEl(node.placeholder, refEl)
       node.update()
+    } else if (node instanceof AlefText) {
+      insertEl(node.node, refEl)
     } else if (node instanceof AlefStyle) {
       appendEl(document.head, node.el)
       node.update()
-    } else if (node instanceof AlefText) {
-      insertEl(node.node, refEl)
     }
   },
 
@@ -445,17 +491,18 @@ const dom = {
   removeNode(node) {
     if (isComponent(node)) {
       node.unmount()
+    } else if (node instanceof AlefFragment) {
+      node.nodes.forEach(node => dom.removeNode(node))
+      removeEl(node.placeholder)
     } else if (node instanceof AlefElement) {
-      node.unmount()
+      node.deactivate()
       removeEl(node.el)
     } else if (node instanceof IfBlock) {
       node.falsify()
       removeEl(node.placeholder)
     } else if (node instanceof IfElseBlock) {
-      node.if.falsify()
-      node.else.falsify()
-      removeEl(node.if.placeholder)
-      removeEl(node.else.placeholder)
+      node.steps.forEach(step => step.falsify())
+      node.steps.forEach(step => appendEl(step.placeholder))
     } else if (node instanceof ListBlock) {
       node.unmount()
       removeEl(node.placeholder)

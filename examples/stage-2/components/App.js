@@ -2,11 +2,12 @@ import {
   banchUpdate,
   Component,
   Element,
-  If,
+  Fragment,
   IfElse,
   List,
   Memo,
   New,
+  nope,
   Space,
   Text
 } from '../../lib/helper.js'
@@ -22,7 +23,40 @@ export default class App extends Component {
     let name = 'World'
     let component = 'Hello'
 
-    // create list blocks
+    // create blocks
+    const $if_block = () => {
+      // create nodes
+      const fragment = Fragment()
+      /**/ const c_hello = New(Hello, { name }, fragment)
+      /**/ const input = Element('input', { value: name }, fragment)
+      /**/ const s3 = Space(fragment)
+      /**/ const button = Element('button', fragment)
+      /***/ const text2 = Text('Reset', button)
+
+      // create updates
+      const name_up = () => banchUpdate(
+        [c_hello, 'name', name],
+        [input, 'value', name],
+      )
+
+      // listen events
+      input.listen('input', e => name = e.target.value, name_up)
+      button.listen('click', () => name = 'world', name_up)
+
+      return { node: fragment, update: nope }
+    }
+    const $if_block2 = () => {
+      // create nodes
+      const c_a = New(A)
+
+      return { node: c_a, update: nope }
+    }
+    const $if_block3 = () => {
+      // create nodes
+      const c_b = New(B)
+
+      return { node: c_b, update: nope }
+    }
     const $list_block = name => ({
       create: () => {
         // create memos
@@ -52,39 +86,23 @@ export default class App extends Component {
     })
 
     // create nodes
-    const block = IfElse(() => component === 'Hello')
-    /**/ const c_hello = New(Hello, { name }, block.if)
-    /**/ const block2 = IfElse(() => component === 'A', block.else)
-    /***/ const c_a = New(A, null, block2.if)
-    /***/ const block3 = If(() => component === 'B', block2.else)
-    /****/ const c_b = New(B, null, block3)
+    const block = IfElse([
+      [() => component === 'Hello', $if_block],
+      [() => component === 'A', $if_block2],
+      [() => component === 'B', $if_block3],
+    ], false)
+    const s = Space()
     const p = Element('p')
     /**/ const text = Text('Show Component: ', p)
     /**/ const list = List(['Hello', 'A', 'B'], $list_block, p)
-    const s = Space()
-    const s2 = Space()
-    const input = Element('input', { value: name })
-    const s3 = Space()
-    const button = Element('button')
-    /**/ const text2 = Text('Reset', button)
 
     // create updates
-    const name_up = () => banchUpdate(
-      [c_hello, 'name', name],
-      [input, 'value', name],
-    )
     const component_up = () => banchUpdate(
       block,
-      block2,
-      block3,
       list
     )
 
-    // listen events
-    input.listen('input', e => name = e.target.value, name_up)
-    button.listen('click', () => name = 'world', name_up)
-
     // register nodes
-    this.register(block, s, p, s2, input, s3, button)
+    this.register(block, s, p)
   }
 }

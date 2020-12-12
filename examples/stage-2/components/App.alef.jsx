@@ -6,7 +6,12 @@ let name = 'World'
 let component = 'Hello'
 
 $t: if (component === 'Hello') {
-  <Hello name={name} />
+  <>
+    <Hello name={name} />
+    <input value={e => name = e.target.value} onChange={onChange} />
+    {' '}
+    <button onClick={() => name = 'World'}>Reset</button>
+  </>
 } else if (component === 'A') {
   <A />
 } else if (component === 'B') {
@@ -15,11 +20,13 @@ $t: if (component === 'Hello') {
 
 $t:
 <p>
-  Show Component:
+  <span>Show Component: </span>
   {['Hello', 'A', 'B'].map(name => (
-    <button onClick={() => component = name} key={name} disabled={name === component}>{name}</button>
+    <button
+      style={{ display: 'inline', marginLeft: 6 }}
+      onClick={() => component = name}
+      disabled={name === component}
+      key={name}
+    >{name}</button>
   ))}
 </p>
-
-$t: <input value={e => name = e.target.value} onChange={onChange} />
-$t: <button onClick={() => name = 'World'}>Reset</button>
