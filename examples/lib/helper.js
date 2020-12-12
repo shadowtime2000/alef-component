@@ -75,14 +75,16 @@ export class AlefElement {
   }
   update(key, value) {
     const { el } = this
-    const nullValue = value === undefined || value === null
     if (typeof value === 'function') {
       value = value()
     }
+    const nullValue = value === undefined || value === null
     switch (key) {
+      case 'class':
       case 'className':
         if (nullValue) {
           el.className = ''
+          el.removeAttribute('class')
         } else {
           el.className = String(value)
         }
@@ -245,7 +247,7 @@ export class ListBlock {
     }
     const { parentNode } = this.placeholder
     if (parentNode) {
-      let indexs = []
+      const indexs = []
       this.nodes.forEach((node) => {
         if (newNodes.length === 0 || newNodes.findIndex(newNode => newNode === node) === -1) {
           // remove non-existent nodes
@@ -257,21 +259,31 @@ export class ListBlock {
       newNodes.forEach((newNode) => {
         if (this.nodes.length === 0 || this.nodes.findIndex(node => newNode === node) === -1) {
           // append new nodes
-          dom.appendNode(parentNode, newNode.node)
+          dom.insertNode(newNode.node, this.placeholder)
           indexs.push([indexs.length, newNode.index])
         }
       })
       // fix order
+      const { childNodes } = parentNode
+      const moving = []
+      let placeholderIndex = 0
+      for (let i = 0; i < childNodes.length; i++) {
+        if (childNodes.item(i) === this.placeholder) {
+          placeholderIndex = i
+          break
+        }
+      }
+      const domStartIndex = placeholderIndex - newNodes.length
       indexs.forEach(([domIndex, treeIndex]) => {
-        const { childNodes } = parentNode
         if (domIndex !== treeIndex) {
-          const node = childNodes[domIndex]
-          const ref = childNodes[treeIndex + 1]
-          if (ref) {
-            parentNode.insertBefore(node, ref)
-          } else {
-            parentNode.appendChild(node)
-          }
+          const realDomIndex = domStartIndex + domIndex
+          const node = childNodes.item(realDomIndex)
+          moving.push([node, realDomIndex, domStartIndex + treeIndex])
+        }
+      })
+      moving.forEach(([node, domIndex, treeIndex]) => {
+        if (node !== childNodes.item(treeIndex)) {
+          parentNode.insertBefore(node, childNodes.item(treeIndex + 1))
         }
       })
     }
@@ -398,20 +410,20 @@ const dom = {
     } else if (node instanceof AlefElement) {
       insertEl(node.el, refEl)
       node.mount()
-    } else if (child instanceof IfBlock) {
+    } else if (node instanceof IfBlock) {
       insertEl(node.placeholder, refEl)
       node.update()
-    } else if (child instanceof IfElseBlock) {
+    } else if (node instanceof IfElseBlock) {
       insertEl(node.if.placeholder, refEl)
       insertEl(node.else.placeholder, refEl)
       node.update()
     } else if (node instanceof ListBlock) {
       insertEl(node.placeholder, refEl)
       node.update()
-    } else if (child instanceof AlefStyle) {
+    } else if (node instanceof AlefStyle) {
       appendEl(document.head, node.el)
       node.update()
-    } else if (child instanceof AlefText) {
+    } else if (node instanceof AlefText) {
       insertEl(node.node, refEl)
     }
   },
