@@ -49,9 +49,10 @@ impl Fold for CodeGen {
             optional: false,
             type_ann: None,
           }),
-          init: Some(Box::new(Expr::Ident(quote_ident!(resolver
-            .helper_module
-            .trim_start_matches("window."))))),
+          init: Some(Box::new(Expr::MetaProp(MetaPropExpr {
+            meta: quote_ident!("window"),
+            prop: quote_ident!(resolver.helper_module.trim_start_matches("window.")),
+          }))),
           definite: false,
         }],
       }))));

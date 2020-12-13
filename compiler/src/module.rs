@@ -138,32 +138,26 @@ mod tests {
     let (code, _) = module
       .transpile(resolver.clone())
       .expect("could not transpile module");
+    println!("{}", code);
+    (code, resolver)
+  }
+
+  fn t2(specifer: &str, source: &str, helper_module: &str) -> (String, Rc<RefCell<Resolver>>) {
+    let module = AlefComponentModule::parse(specifer, source).expect("could not parse module");
+    let resolver = Rc::new(RefCell::new(Resolver::new(specifer, helper_module)));
+    let (code, _) = module
+      .transpile(resolver.clone())
+      .expect("could not transpile module");
+    println!("{}", code);
     (code, resolver)
   }
 
   #[test]
   fn test_helper_module() {
-    let module = AlefComponentModule::parse("./App.alef", "").expect("could not parse module");
-    let resolver = Rc::new(RefCell::new(Resolver::new(
-      "./App.alef",
-      "https://deno.land/x/alef/helper.ts",
-    )));
-    let (code, _) = module
-      .transpile(resolver.clone())
-      .expect("could not transpile module");
-    println!("{}", code);
+    let (code, _) = t2("./App.alef", "", "https://deno.land/x/alef/helper.ts");
     assert!(code.contains(" from \"https://deno.land/x/alef/helper.ts\";"));
-
-    let module = AlefComponentModule::parse("./App.alef", "").expect("could not parse module");
-    let resolver = Rc::new(RefCell::new(Resolver::new(
-      "./App.alef",
-      "window.__Alef_Helper",
-    )));
-    let (code, _) = module
-      .transpile(resolver.clone())
-      .expect("could not transpile module");
-    println!("{}", code);
-    assert!(code.contains("} = __Alef_Helper;"));
+    let (code, _) = t2("./App.alef", "", "window.__Alef_Helper");
+    assert!(code.contains("} = window.__Alef_Helper;"));
   }
 
   #[test]
@@ -174,7 +168,6 @@ mod tests {
       $t: <p>hello {name}!</p>    
     "#;
     let (code, _) = t("App.alef", source);
-    println!("{}", code);
     assert!(code.contains(" from \"@alephjs/helper\";"));
     assert!(code.contains("export default class App extends Component"));
     assert!(code.contains("constructor(prop)"));
