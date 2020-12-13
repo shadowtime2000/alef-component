@@ -28,7 +28,34 @@ impl Fold for CodeGen {
     let mut output: Vec<ModuleItem> = vec![];
 
     // import helper module
-    {
+    if resolver.helper_module.starts_with("window.") {
+      let mut props: Vec<ObjectPatProp> = vec![];
+      for name in resolver.dep_helpers.clone() {
+        props.push(ObjectPatProp::Assign(AssignPatProp {
+          span: DUMMY_SP,
+          key: quote_ident!(name),
+          value: None,
+        }))
+      }
+      output.push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(VarDecl {
+        span: DUMMY_SP,
+        kind: VarDeclKind::Const,
+        declare: false,
+        decls: vec![VarDeclarator {
+          span: DUMMY_SP,
+          name: Pat::Object(ObjectPat {
+            span: DUMMY_SP,
+            props,
+            optional: false,
+            type_ann: None,
+          }),
+          init: Some(Box::new(Expr::Ident(quote_ident!(resolver
+            .helper_module
+            .trim_start_matches("window."))))),
+          definite: false,
+        }],
+      }))));
+    } else {
       let mut specifiers: Vec<ImportSpecifier> = vec![];
       for name in resolver.dep_helpers.clone() {
         specifiers.push(ImportSpecifier::Named(ImportNamedSpecifier {

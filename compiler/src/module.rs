@@ -142,7 +142,32 @@ mod tests {
   }
 
   #[test]
-  fn test_transpile_ts() {
+  fn test_helper_module() {
+    let module = AlefComponentModule::parse("./App.alef", "").expect("could not parse module");
+    let resolver = Rc::new(RefCell::new(Resolver::new(
+      "./App.alef",
+      "https://deno.land/x/alef/helper.ts",
+    )));
+    let (code, _) = module
+      .transpile(resolver.clone())
+      .expect("could not transpile module");
+    println!("{}", code);
+    assert!(code.contains(" from \"https://deno.land/x/alef/helper.ts\";"));
+
+    let module = AlefComponentModule::parse("./App.alef", "").expect("could not parse module");
+    let resolver = Rc::new(RefCell::new(Resolver::new(
+      "./App.alef",
+      "window.__Alef_Helper",
+    )));
+    let (code, _) = module
+      .transpile(resolver.clone())
+      .expect("could not transpile module");
+    println!("{}", code);
+    assert!(code.contains("} = __Alef_Helper;"));
+  }
+
+  #[test]
+  fn test_component_export() {
     let source = r#"
       let name: string = 'world'
 
@@ -150,7 +175,7 @@ mod tests {
     "#;
     let (code, _) = t("App.alef", source);
     println!("{}", code);
-    assert!(code.contains("from \"@alephjs/helper\";"));
+    assert!(code.contains(" from \"@alephjs/helper\";"));
     assert!(code.contains("export default class App extends Component"));
     assert!(code.contains("constructor(prop)"));
   }
