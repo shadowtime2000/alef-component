@@ -1,6 +1,6 @@
 // Copyright 2020 the The Alef Component authors. All rights reserved. MIT license.
 
-use crate::resolve::Resolver;
+use crate::resolve::{format_component_name, Resolver};
 use std::path::Path;
 use std::{cell::RefCell, rc::Rc};
 use swc_common::DUMMY_SP;
@@ -90,50 +90,5 @@ impl Fold for CodeGen {
     }
 
     output
-  }
-}
-
-fn format_component_name(s: &str) -> String {
-  let mut should_uppercase = true;
-  let mut char_vec: Vec<char> = vec![];
-  for c in s.trim_end_matches(".alef").chars() {
-    if c >= 'a' && c <= 'z' {
-      if should_uppercase {
-        should_uppercase = false;
-        char_vec.push(c.to_ascii_uppercase());
-      } else {
-        char_vec.push(c);
-      }
-    } else if c >= 'A' && c <= 'Z' {
-      should_uppercase = false;
-      char_vec.push(c);
-    } else if (c >= '0' && c <= '9') && char_vec.len() > 0 {
-      should_uppercase = false;
-      char_vec.push(c);
-    } else {
-      should_uppercase = true
-    }
-  }
-  if char_vec.len() == 0 {
-    return "App".into();
-  }
-  char_vec.into_iter().collect()
-}
-
-#[cfg(test)]
-mod tests {
-  use super::*;
-  #[test]
-  fn test_format_component_name() {
-    assert_eq!(format_component_name("app.alef"), "App");
-    assert_eq!(format_component_name("hello-world.alef"), "HelloWorld");
-    assert_eq!(format_component_name("hello_world.alef"), "HelloWorld");
-    assert_eq!(format_component_name("hello.world.alef"), "HelloWorld");
-    assert_eq!(format_component_name("hello world.alef"), "HelloWorld");
-    assert_eq!(format_component_name("HELLO world.alef"), "HELLOWorld");
-    assert_eq!(format_component_name("h798.alef"), "H798");
-    assert_eq!(format_component_name("798hello world.alef"), "HelloWorld");
-    assert_eq!(format_component_name("798.alef"), "App");
-    assert_eq!(format_component_name("Hello 世界!.alef"), "Hello");
   }
 }
