@@ -95,5 +95,5 @@ pub fn ast_walker(resolver: Rc<RefCell<Resolver>>) -> impl Fold {
 }
 
 pub fn ast_trasnform(ast: &AST) -> Vec<Stmt> {
-  ASTransform::new(ast).transform()
+  ASTransform::from(ast).transform()
 }

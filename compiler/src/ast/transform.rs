@@ -9,7 +9,7 @@ pub struct ASTransform {
 }
 
 impl ASTransform {
-    pub fn new(ast: &AST) -> Self {
+    pub fn from(ast: &AST) -> Self {
         ASTransform {
             statements: ast.statements.clone(),
         }
