@@ -1,10 +1,10 @@
 // Copyright 2020 the The Alef Component authors. All rights reserved. MIT license.
 
-use crate::ast_walker::ast_walker;
+use crate::ast::ast_walker;
+use crate::code_gen::code_gen;
 use crate::error::{DiagnosticBuffer, ErrorBuffer};
 use crate::resolve::Resolver;
 
-use serde::Deserialize;
 use std::{cell::RefCell, path::Path, rc::Rc};
 use swc_common::{
   chain,
@@ -17,33 +17,9 @@ use swc_ecmascript::{
   codegen::{text_writer::JsWriter, Node},
   parser::lexer::Lexer,
   parser::{JscTarget, StringInput, Syntax, TsConfig},
-  transforms::{fixer, helpers, react, typescript},
+  transforms::{fixer, helpers},
   visit::{Fold, FoldWith},
 };
-
-#[derive(Clone, Debug, Default, Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "camelCase")]
-pub struct EmitOptions {
-  #[serde(default = "default_helper_module")]
-  pub helper_module: String,
-
-  #[serde(default = "default_target")]
-  pub target: JscTarget,
-
-  #[serde(default)]
-  pub source_map: bool,
-
-  #[serde(default)]
-  pub is_dev: bool,
-}
-
-fn default_helper_module() -> String {
-  "@alephjs/helper".into()
-}
-
-fn default_target() -> JscTarget {
-  JscTarget::Es2020
-}
 
 #[derive(Clone)]
 pub struct AlefComponentModule {
@@ -102,30 +78,20 @@ impl AlefComponentModule {
   pub fn transpile(
     self,
     resolver: Rc<RefCell<Resolver>>,
-    options: &EmitOptions,
   ) -> Result<(String, Option<String>), anyhow::Error> {
     let mut passes = chain!(
-      ast_walker(resolver.clone(), self.source_map.clone(), options.is_dev),
-      react::jsx(
-        self.source_map.clone(),
-        Some(&self.comments),
-        react::Options {
-          use_builtins: true,
-          ..Default::default()
-        },
-      ),
-      typescript::strip(),
+      ast_walker(resolver.clone()),
+      code_gen(resolver.clone()),
       fixer(Some(&self.comments)),
     );
 
-    self.apply_transform(&mut passes, options.source_map)
+    self.apply_transform(&mut passes)
   }
 
   /// Apply transform with given fold.
   pub fn apply_transform<T: Fold>(
     &self,
     mut tr: T,
-    source_map: bool,
   ) -> Result<(String, Option<String>), anyhow::Error> {
     let program = Program::Module(self.module.clone());
     let program = swc_common::GLOBALS.set(&Globals::new(), || {
@@ -133,11 +99,7 @@ impl AlefComponentModule {
     });
     let mut buf = Vec::new();
     let mut src_map_buf = Vec::new();
-    let src_map = if source_map {
-      Some(&mut src_map_buf)
-    } else {
-      None
-    };
+    let src_map = Some(&mut src_map_buf);
     {
       let writer = Box::new(JsWriter::new(
         self.source_map.clone(),
@@ -156,17 +118,13 @@ impl AlefComponentModule {
       program.emit_with(&mut emitter).unwrap();
     }
     let src = String::from_utf8(buf).unwrap();
-    if source_map {
-      let mut buf = Vec::new();
-      self
-        .source_map
-        .build_source_map_from(&mut src_map_buf, None)
-        .to_writer(&mut buf)
-        .unwrap();
-      Ok((src, Some(String::from_utf8(buf).unwrap())))
-    } else {
-      Ok((src, None))
-    }
+    let mut buf = Vec::new();
+    self
+      .source_map
+      .build_source_map_from(&mut src_map_buf, None)
+      .to_writer(&mut buf)
+      .unwrap();
+    Ok((src, Some(String::from_utf8(buf).unwrap())))
   }
 }
 
@@ -177,9 +135,9 @@ mod tests {
 
   fn t(specifer: &str, source: &str) -> (String, Rc<RefCell<Resolver>>) {
     let module = AlefComponentModule::parse(specifer, source).expect("could not parse module");
-    let resolver = Rc::new(RefCell::new(Resolver::new()));
+    let resolver = Rc::new(RefCell::new(Resolver::default()));
     let (code, _) = module
-      .transpile(resolver.clone(), &EmitOptions::default())
+      .transpile(resolver.clone())
       .expect("could not transpile module");
     (code, resolver)
   }
@@ -193,6 +151,8 @@ mod tests {
     "#;
     let (code, _) = t("App.alef", source);
     println!("{}", code);
-    assert!(code.contains("let name = 'world';"));
+    assert!(code.contains("from \"@alephjs/helper\";"));
+    assert!(code.contains("export default class App extends Component"));
+    assert!(code.contains("constructor(prop)"));
   }
 }
