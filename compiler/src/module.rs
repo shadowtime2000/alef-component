@@ -1,10 +1,9 @@
 // Copyright 2020 the The Alef Component authors. All rights reserved. MIT license.
 
-use crate::ast::ast_walker;
-use crate::code_gen::code_gen;
-use crate::error::{DiagnosticBuffer, ErrorBuffer};
-use crate::resolve::Resolver;
-
+use super::ast::ast_walker;
+use super::code_gen::code_gen;
+use super::error::{DiagnosticBuffer, ErrorBuffer};
+use super::resolve::Resolver;
 use std::{cell::RefCell, path::Path, rc::Rc};
 use swc_common::{
   chain,

@@ -1,6 +1,7 @@
 // Copyright 2020 the The Alef Component authors. All rights reserved. MIT license.
 
-use crate::resolve::{format_component_name, Resolver};
+use super::ast::ast_trasnform;
+use super::resolve::{format_component_name, Resolver};
 use std::path::Path;
 use std::{cell::RefCell, rc::Rc};
 use swc_common::DUMMY_SP;
@@ -25,7 +26,6 @@ impl Fold for CodeGen {
   fn fold_module_items(&mut self, _: Vec<ModuleItem>) -> Vec<ModuleItem> {
     let resolver = self.resolver.borrow_mut();
     let mut output: Vec<ModuleItem> = vec![];
-    let mut stmts: Vec<Stmt> = vec![]; // todo: transform AST to stmts
 
     // import helper module
     {
@@ -73,7 +73,10 @@ impl Fold for CodeGen {
                 })],
                 body: Some(BlockStmt {
                   span: DUMMY_SP,
-                  stmts,
+                  stmts: match &resolver.ast {
+                    Some(ast) => ast_trasnform(ast),
+                    _ => vec![],
+                  },
                 }),
                 accessibility: None,
                 is_optional: false,
