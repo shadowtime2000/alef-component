@@ -45,19 +45,14 @@ pub struct ConstStatement {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct FunctionStatement {
-  pub function: Function,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SideEffectStatement {
   pub name: Option<String>, // the named side effect is like `$_{NAME}:`
-  pub expr: Box<Expr>,
+  pub stmt: Box<Stmt>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct JSXStatement {
-  pub expr: Box<JSX>,
+  pub jsx: Box<JSX>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -75,11 +70,11 @@ pub enum Statement {
   Import(ImportStatement),         // match `import ... from "..."`
   Var(VarStatement),               // match `var` and `let`
   Const(ConstStatement),           // match `const`
-  Function(FunctionStatement),     // match `function`
   SideEffect(SideEffectStatement), // match `$:` and `$_{NAME}:`
   JSX(JSXStatement),               // match `$t:`
   Style(StyleStatement),           // match `$style:`
   Export(ExportStatement),         // match `export default { ... }`
+  Stmt(Stmt),                      // regular statement
 }
 
 /// AST for Alef Component.
