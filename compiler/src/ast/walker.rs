@@ -70,6 +70,7 @@ impl Fold for ASTWalker {
                           }
                         }
                         "Context" => kind = ConstKind::Context,
+                        "Memo" => kind = ConstKind::Memo,
                         _ => {}
                       },
                       _ => {}
@@ -78,9 +79,6 @@ impl Fold for ASTWalker {
                   },
                   _ => {}
                 };
-                if kind == ConstKind::Const {
-                  // todo: check const whether is a memo
-                }
                 stmts.push(Statement::Const(ConstStatement {
                   kind,
                   name: decl.name,
