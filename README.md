@@ -21,9 +21,9 @@ The main concept of Alef Component is parted in three stages:
   - **Nodes Rendering** - render nodes using native DOM
   - **Conditional Rendering** - render if-else expression in JSX
   - **Loop Rendering** - render list
-  - **Events** - handle events to update view
   - **Memo** - use computed state
   - **Side Effect** - react for state changes
+  - **Events** - handle events to update view
 - Stage 2 ([Docs](https://github.com/alephjs/alef-component-draft/issues/4))
   - **Import Alef Component** - `import Logo from "./Logo.alef"`
   - **Slots** - `<Logo><img ... /></Logo>`
@@ -31,10 +31,10 @@ The main concept of Alef Component is parted in three stages:
   - **Context** - share state in child component tree
   - **Styling** - inline CSS with scope
   - **Transition** - transition animation for view changes
-  - **Mount** - mount Alef Component to DOM
-- Stage 3 ([Docs](https://github.com/alephjs/alef-component-draft/issues/5))
   - **Asynchronous Component** - wait for data fetching
   - **Error Boundary** - catch errors in child component tree
+- Stage 3 ([Docs](https://github.com/alephjs/alef-component-draft/issues/5))
+  - **Mount** - mount Alef Component to DOM
   - **SSR** - server side rendering
   - **Precompile** - transfom Alef Component code before AOT compilation
   - **Hot Refresh** - refresh component without data losing
