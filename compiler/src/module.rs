@@ -169,9 +169,9 @@ mod tests {
       $t: <p>hello {name}!</p>    
     "#;
     let (code, _) = t("App.alef", source);
-    assert!(code.contains(" from \"@alephjs/helper\";"));
+    assert!(code.contains(" from \"alef-dom\";"));
     assert!(code.contains("export default class App extends Component"));
-    assert!(code.contains("constructor(prop)"));
-    assert!(code.contains("super(prop)"));
+    assert!(code.contains("constructor(props)"));
+    assert!(code.contains("super(props)"));
   }
 }

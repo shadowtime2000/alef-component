@@ -26,9 +26,8 @@ impl Fold for CodeGen {
   fn fold_module_items(&mut self, _: Vec<ModuleItem>) -> Vec<ModuleItem> {
     let resolver = self.resolver.borrow_mut();
     let mut output: Vec<ModuleItem> = vec![];
-
-    // import helper module
-    if resolver.helper_module.starts_with("window.") {
+    // import dom helper module
+    if resolver.dom_helper_module.starts_with("window.") {
       let mut props: Vec<ObjectPatProp> = vec![];
       for name in resolver.dep_helpers.clone() {
         props.push(ObjectPatProp::Assign(AssignPatProp {
@@ -51,7 +50,7 @@ impl Fold for CodeGen {
           }),
           init: Some(Box::new(Expr::MetaProp(MetaPropExpr {
             meta: quote_ident!("window"),
-            prop: quote_ident!(resolver.helper_module.trim_start_matches("window.")),
+            prop: quote_ident!(resolver.dom_helper_module.trim_start_matches("window.")),
           }))),
           definite: false,
         }],
@@ -70,7 +69,7 @@ impl Fold for CodeGen {
         specifiers,
         src: Str {
           span: DUMMY_SP,
-          value: resolver.helper_module.as_str().into(),
+          value: resolver.dom_helper_module.as_str().into(),
           has_escape: false,
         },
         type_only: false,
@@ -97,12 +96,27 @@ impl Fold for CodeGen {
                 params: vec![ParamOrTsParamProp::Param(Param {
                   span: DUMMY_SP,
                   decorators: vec![],
-                  pat: Pat::Ident(quote_ident!("prop")),
+                  pat: Pat::Ident(quote_ident!("props")),
                 })],
                 body: Some(BlockStmt {
                   span: DUMMY_SP,
                   stmts: match &resolver.ast {
-                    Some(ast) => ast_trasnform(ast),
+                    Some(ast) => [
+                      vec![Stmt::Expr(ExprStmt {
+                        span: DUMMY_SP,
+                        expr: Box::new(Expr::Call(CallExpr {
+                          span: DUMMY_SP,
+                          callee: ExprOrSuper::Super(Super { span: DUMMY_SP }),
+                          args: vec![ExprOrSpread {
+                            spread: None,
+                            expr: Box::new(Expr::Ident(quote_ident!("props"))),
+                          }],
+                          type_args: None,
+                        })),
+                      })],
+                      ast_trasnform(ast),
+                    ]
+                    .concat(),
                     _ => vec![],
                   },
                 }),

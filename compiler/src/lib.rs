@@ -16,19 +16,22 @@ use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 #[derive(Clone, Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
-pub struct EmitOptions {
-  #[serde(default = "default_helper_module")]
-  pub helper_module: String,
+pub struct CompileOptions {
+  #[serde(default = "default_dom_helper_module")]
+  pub dom_helper_module: String,
 
   #[serde(default = "default_target")]
   pub target: JscTarget,
 
   #[serde(default)]
   pub is_dev: bool,
+
+  #[serde(default)]
+  pub hot_refresh: bool,
 }
 
-fn default_helper_module() -> String {
-  "@alephjs/helper".into()
+fn default_dom_helper_module() -> String {
+  "alef-dom".into()
 }
 
 fn default_target() -> JscTarget {
@@ -50,13 +53,13 @@ pub struct TransformOutput {
 pub fn transform_sync(specifier: &str, source: &str, opts: JsValue) -> Result<JsValue, JsValue> {
   console_error_panic_hook::set_once();
 
-  let opts: EmitOptions = opts
+  let opts: CompileOptions = opts
     .into_serde()
     .map_err(|err| format!("failed to parse options: {}", err))
     .unwrap();
   let resolver = Rc::new(RefCell::new(Resolver::new(
     specifier,
-    opts.helper_module.as_str(),
+    opts.dom_helper_module.as_str(),
   )));
   let module = AlefComponentModule::parse(specifier, source).expect("could not parse module");
   let (code, map) = module

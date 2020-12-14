@@ -24,8 +24,8 @@ pub struct CSSTemplate {
 pub struct Resolver {
   /// current component specifier
   pub specifier: String,
-  /// helper module
-  pub helper_module: String,
+  /// dom helper module
+  pub dom_helper_module: String,
   /// dependend helpers
   pub dep_helpers: IndexSet<String>,
   /// parsed AST of the component
@@ -37,12 +37,12 @@ pub struct Resolver {
 }
 
 impl Resolver {
-  pub fn new(specifier: &str, helper_module: &str) -> Self {
+  pub fn new(specifier: &str, dom_helper_module: &str) -> Self {
     let mut dep_helpers = IndexSet::<String>::new();
     dep_helpers.insert("Component".into());
     Resolver {
       specifier: specifier.into(),
-      helper_module: helper_module.into(),
+      dom_helper_module: dom_helper_module.into(),
       dep_helpers,
       ast: None,
       dep_graph: Vec::new(),
@@ -57,7 +57,7 @@ impl Default for Resolver {
     dep_helpers.insert("Component".into());
     Resolver {
       specifier: "./App.alef".into(),
-      helper_module: "@alephjs/helper".into(),
+      dom_helper_module: "alef-dom".into(),
       dep_helpers,
       ast: None,
       dep_graph: Vec::new(),
