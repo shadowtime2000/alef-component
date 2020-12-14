@@ -29,7 +29,63 @@ impl Fold for ASTWalker {
         ModuleItem::ModuleDecl(decl) => {}
         ModuleItem::Stmt(stmt) => match stmt {
           Stmt::Decl(Decl::Var(VarDecl { kind, decls, .. })) => match kind {
-            VarDeclKind::Const => for decl in decls {},
+            VarDeclKind::Const => {
+              for decl in decls {
+                let mut kind = ConstKind::Const;
+                match decl.name {
+                  Pat::Ident(Ident { ref type_ann, .. })
+                  | Pat::Array(ArrayPat { ref type_ann, .. })
+                  | Pat::Object(ObjectPat { ref type_ann, .. }) => match type_ann {
+                    Some(TsTypeAnn { type_ann, .. }) => match type_ann.as_ref() {
+                      TsType::TsTypeRef(TsTypeRef {
+                        type_name: TsEntityName::Ident(Ident { sym, .. }),
+                        type_params,
+                        ..
+                      }) => match sym.as_ref() {
+                        "Prop" => {
+                          kind = ConstKind::Prop;
+                          match type_params {
+                            Some(type_params) => {
+                              if type_params.params.len() == 1 {
+                                match type_params.params.first() {
+                                  Some(param) => match param.as_ref() {
+                                    TsType::TsTypeRef(TsTypeRef {
+                                      type_name: TsEntityName::Ident(Ident { sym, .. }),
+                                      type_params: None,
+                                      ..
+                                    }) => {
+                                      if sym.as_ref().eq("Children") {
+                                        kind = ConstKind::Slots
+                                      }
+                                    }
+                                    _ => {}
+                                  },
+                                  _ => {}
+                                }
+                              }
+                            }
+                            _ => {}
+                          }
+                        }
+                        "Context" => kind = ConstKind::Context,
+                        _ => {}
+                      },
+                      _ => {}
+                    },
+                    _ => {}
+                  },
+                  _ => {}
+                };
+                if kind == ConstKind::Const {
+                  // todo: check const whether is a memo
+                }
+                stmts.push(Statement::Const(ConstStatement {
+                  kind,
+                  name: decl.name,
+                  expr: decl.init.unwrap(), 
+                }))
+              }
+            }
             _ => {
               for decl in decls {
                 let mut is_array = false;
