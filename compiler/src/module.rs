@@ -164,6 +164,7 @@ mod tests {
   fn test_component_export() {
     let source = r#"
       let name: string = 'world'
+      let tmp: Ref<string> = 'world'
 
       $t: <p>hello {name}!</p>    
     "#;
@@ -171,5 +172,6 @@ mod tests {
     assert!(code.contains(" from \"@alephjs/helper\";"));
     assert!(code.contains("export default class App extends Component"));
     assert!(code.contains("constructor(prop)"));
+    assert!(code.contains("super(prop)"));
   }
 }
