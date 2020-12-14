@@ -1,9 +1,10 @@
 // Copyright 2020 the The Alef Component authors. All rights reserved. MIT license.
 
-use super::ast::ast_trasnform;
-use super::resolve::{format_component_name, Resolver};
-use std::path::Path;
-use std::{cell::RefCell, rc::Rc};
+use super::{
+  ast::ast_trasnform,
+  resolve::{format_component_name, Resolver},
+};
+use std::{cell::RefCell, path::Path, rc::Rc};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::*;
 use swc_ecma_utils::quote_ident;
@@ -26,6 +27,7 @@ impl Fold for CodeGen {
   fn fold_module_items(&mut self, _: Vec<ModuleItem>) -> Vec<ModuleItem> {
     let resolver = self.resolver.borrow_mut();
     let mut output: Vec<ModuleItem> = vec![];
+
     // import dom helper module
     if resolver.dom_helper_module.starts_with("window.") {
       let mut props: Vec<ObjectPatProp> = vec![];

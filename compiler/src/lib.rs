@@ -8,8 +8,7 @@ mod resolve;
 
 use module::AlefComponentModule;
 use resolve::{CSSTemplate, DependencyDescriptor, Resolver};
-use serde::Deserialize;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::{cell::RefCell, rc::Rc};
 use swc_ecmascript::parser::JscTarget;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};

@@ -1,8 +1,10 @@
 // Copyright 2020 the The Alef Component authors. All rights reserved. MIT license.
 
-use super::statement::*;
-use super::AST;
-use super::{css::CSS, jsx::JSX};
+use super::{
+  statement::*,
+  AST,
+  {css::CSS, jsx::JSX},
+};
 use crate::resolve::Resolver;
 use indexmap::IndexSet;
 use std::{cell::RefCell, rc::Rc};
@@ -54,7 +56,7 @@ impl Fold for ASTWalker {
                                       type_params: None,
                                       ..
                                     }) => {
-                                      if sym.as_ref().eq("Children") {
+                                      if sym.eq("Children") {
                                         kind = ConstKind::Slots
                                       }
                                     }
@@ -82,7 +84,7 @@ impl Fold for ASTWalker {
                 stmts.push(Statement::Const(ConstStatement {
                   kind,
                   name: decl.name,
-                  expr: decl.init.unwrap(), 
+                  expr: decl.init.unwrap(),
                 }))
               }
             }
@@ -106,7 +108,7 @@ impl Fold for ASTWalker {
                       TsType::TsTypeRef(TsTypeRef {
                         type_name: TsEntityName::Ident(Ident { sym, .. }),
                         ..
-                      }) => is_ref = sym.as_ref().eq("Ref"),
+                      }) => is_ref = sym.eq("Ref"),
                       _ => {}
                     },
                     _ => {}

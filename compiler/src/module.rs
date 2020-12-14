@@ -1,9 +1,11 @@
 // Copyright 2020 the The Alef Component authors. All rights reserved. MIT license.
 
-use super::ast::ast_walker;
-use super::code_gen::code_gen;
-use super::error::{DiagnosticBuffer, ErrorBuffer};
-use super::resolve::Resolver;
+use super::{
+  ast::ast_walker,
+  code_gen::code_gen,
+  error::{DiagnosticBuffer, ErrorBuffer},
+  resolve::Resolver,
+};
 use std::{cell::RefCell, path::Path, rc::Rc};
 use swc_common::{
   chain,
@@ -142,9 +144,9 @@ mod tests {
     (code, resolver)
   }
 
-  fn t2(specifer: &str, source: &str, helper_module: &str) -> (String, Rc<RefCell<Resolver>>) {
+  fn t2(specifer: &str, source: &str, dom_helper_module: &str) -> (String, Rc<RefCell<Resolver>>) {
     let module = AlefComponentModule::parse(specifer, source).expect("could not parse module");
-    let resolver = Rc::new(RefCell::new(Resolver::new(specifer, helper_module)));
+    let resolver = Rc::new(RefCell::new(Resolver::new(specifer, dom_helper_module)));
     let (code, _) = module
       .transpile(resolver.clone())
       .expect("could not transpile module");
@@ -153,11 +155,11 @@ mod tests {
   }
 
   #[test]
-  fn test_helper_module() {
-    let (code, _) = t2("./App.alef", "", "https://deno.land/x/alef/helper.ts");
-    assert!(code.contains(" from \"https://deno.land/x/alef/helper.ts\";"));
-    let (code, _) = t2("./App.alef", "", "window.__Alef_Helper");
-    assert!(code.contains("} = window.__Alef_Helper;"));
+  fn test_dom_helper_module() {
+    let (code, _) = t2("./App.alef", "", "https://deno.land/x/alef/dom.ts");
+    assert!(code.contains(" from \"https://deno.land/x/alef/dom.ts\";"));
+    let (code, _) = t2("./App.alef", "", "window.__ALEF_DOM");
+    assert!(code.contains("} = window.__ALEF_DOM;"));
   }
 
   #[test]
