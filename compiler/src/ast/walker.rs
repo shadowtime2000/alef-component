@@ -24,7 +24,6 @@ impl Fold for ASTWalker {
   fn fold_module_items(&mut self, module_items: Vec<ModuleItem>) -> Vec<ModuleItem> {
     let mut resolver = self.resolver.borrow_mut();
     let mut stmts: Vec<Statement> = vec![];
-    let mut states: IndexSet<String> = IndexSet::new();
 
     for item in module_items {
       match item {
@@ -56,7 +55,7 @@ impl Fold for ASTWalker {
                                       type_params: None,
                                       ..
                                     }) => {
-                                      if sym.eq("Children") {
+                                      if sym.eq("Slots") {
                                         kind = ConstKind::Slots
                                       }
                                     }
@@ -113,11 +112,6 @@ impl Fold for ASTWalker {
                   },
                   _ => {}
                 };
-                if !is_ref {
-                  for id in get_idents_from_pat(&decl.name) {
-                    states.insert(id.sym.as_ref().into());
-                  }
-                }
                 stmts.push(Statement::Var(VarStatement {
                   name: decl.name,
                   expr: decl.init,
@@ -177,46 +171,4 @@ impl Fold for ASTWalker {
     // return a empty moudle
     vec![]
   }
-}
-
-fn get_idents_from_pat(pat: &Pat) -> Vec<Ident> {
-  let mut idents: Vec<Ident> = vec![];
-
-  match pat {
-    Pat::Ident(id) => {
-      idents.push(id.clone());
-    }
-    Pat::Array(ArrayPat { elems, .. }) => {
-      for el in elems {
-        match el {
-          Some(el) => {
-            for id in get_idents_from_pat(el) {
-              idents.push(id);
-            }
-          }
-          _ => {}
-        }
-      }
-    }
-    Pat::Object(ObjectPat { props, .. }) => {
-      for prop in props {
-        match prop {
-          ObjectPatProp::Assign(AssignPatProp { key, .. }) => idents.push(key.clone()),
-          ObjectPatProp::KeyValue(KeyValuePatProp { value, .. }) => {
-            for id in get_idents_from_pat(value.as_ref()) {
-              idents.push(id)
-            }
-          }
-          ObjectPatProp::Rest(RestPat { arg, .. }) => {
-            for id in get_idents_from_pat(arg.as_ref()) {
-              idents.push(id)
-            }
-          }
-        }
-      }
-    }
-    _ => {}
-  };
-
-  idents
 }

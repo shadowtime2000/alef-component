@@ -22,7 +22,7 @@ pub enum ConstKind {
     Const,   // match regular `const`
     Memo,    // match typed `Memo<T>`
     Prop,    // match typed `Prop<T>`
-    Slots,   // match typed `Prop<Children>`
+    Slots,   // match typed `Prop<Slots>`
     Context, // match typed `Context<T>`
 }
 
