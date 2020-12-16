@@ -18,25 +18,25 @@ pub struct VarStatement {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum ConstKind {
-    Regular,   // match regular `const`
+pub enum ConstTyped {
+    Any, // match regular `const`
     Memo,    // match typed `Memo<T>`
     Prop,    // match typed `Prop<T>`
     Slots,   // match typed `Prop<Slots>`
     Context, // match typed `Context<T>`
     FC,      // match typed `FC<T>`
 }
-    
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ConstStatement {
-    pub kind: ConstKind,
     pub name: Pat,
+    pub typed: ConstTyped,
     pub expr: Box<Expr>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SideEffectStatement {
-    pub name: Option<String>, // the named side effect is like `$_{NAME}:`
+    pub name: Option<String>, // a named side effect is like `$_{NAME}:`
     pub stmt: Box<Stmt>,
 }
 
@@ -52,7 +52,7 @@ pub struct StyleStatement {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ExportStatement {
-    pub specifiers: Vec<Ident>,
+    pub expr: Box<Expr>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

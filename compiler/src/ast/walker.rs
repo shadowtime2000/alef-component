@@ -6,7 +6,6 @@ use super::{
   {css::CSS, jsx::JSX},
 };
 use crate::resolve::Resolver;
-use indexmap::IndexSet;
 use std::{cell::RefCell, rc::Rc};
 use swc_ecma_ast::*;
 use swc_ecma_visit::{noop_fold_type, Fold};
@@ -24,15 +23,26 @@ impl Fold for ASTWalker {
   fn fold_module_items(&mut self, module_items: Vec<ModuleItem>) -> Vec<ModuleItem> {
     let mut resolver = self.resolver.borrow_mut();
     let mut stmts: Vec<Statement> = vec![];
-
     for item in module_items {
       match item {
-        ModuleItem::ModuleDecl(decl) => {}
+        ModuleItem::ModuleDecl(decl) => match decl {
+          ModuleDecl::Import(ImportDecl {
+            specifiers, src, ..
+          }) => stmts.push(Statement::Import(ImportStatement {
+            specifiers,
+            src: src.value.as_ref().into(),
+            is_alef_component: src.value.as_ref().ends_with(".alef"),
+          })),
+          ModuleDecl::ExportDefaultExpr(ExportDefaultExpr { expr, .. }) => {
+            stmts.push(Statement::Export(ExportStatement { expr }))
+          }
+          _ => {}
+        },
         ModuleItem::Stmt(stmt) => match stmt {
           Stmt::Decl(Decl::Var(VarDecl { kind, decls, .. })) => match kind {
             VarDeclKind::Const => {
               for decl in decls {
-                let mut kind = ConstKind::Regular;
+                let mut typed = ConstTyped::Any;
                 match decl.name {
                   Pat::Ident(Ident { ref type_ann, .. })
                   | Pat::Array(ArrayPat { ref type_ann, .. })
@@ -44,7 +54,7 @@ impl Fold for ASTWalker {
                         ..
                       }) => match sym.as_ref() {
                         "Prop" => {
-                          kind = ConstKind::Prop;
+                          typed = ConstTyped::Prop;
                           match type_params {
                             Some(type_params) => {
                               if type_params.params.len() == 1 {
@@ -56,7 +66,7 @@ impl Fold for ASTWalker {
                                       ..
                                     }) => {
                                       if sym.eq("Slots") {
-                                        kind = ConstKind::Slots
+                                        typed = ConstTyped::Slots
                                       }
                                     }
                                     _ => {}
@@ -68,9 +78,9 @@ impl Fold for ASTWalker {
                             _ => {}
                           }
                         }
-                        "Context" => kind = ConstKind::Context,
-                        "Memo" => kind = ConstKind::Memo,
-                        "FC" => kind = ConstKind::FC,
+                        "Context" => typed = ConstTyped::Context,
+                        "Memo" => typed = ConstTyped::Memo,
+                        "FC" => typed = ConstTyped::FC,
                         _ => {}
                       },
                       _ => {}
@@ -80,7 +90,7 @@ impl Fold for ASTWalker {
                   _ => {}
                 };
                 stmts.push(Statement::Const(ConstStatement {
-                  kind,
+                  typed,
                   name: decl.name,
                   expr: decl.init.unwrap(),
                 }))
