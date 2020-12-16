@@ -19,7 +19,7 @@ pub struct VarStatement {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ConstTyped {
-    Any, // match regular `const`
+    Regular, // match regular `const`
     Memo,    // match typed `Memo<T>`
     Prop,    // match typed `Prop<T>`
     Slots,   // match typed `Prop<Slots>`
@@ -41,7 +41,7 @@ pub struct SideEffectStatement {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum JSXStatement {
+pub enum TemplateStatement {
     Element(JSXElement),
     Fragment(JSXFragment),
 }
@@ -62,7 +62,7 @@ pub enum Statement {
     Var(VarStatement),               // match `var` and `let`
     Const(ConstStatement),           // match `const`
     SideEffect(SideEffectStatement), // match `$:` and `$_{NAME}:`
-    JSX(JSXStatement),               // match `$t:`
+    Template(TemplateStatement),     // match `$t:`
     Style(StyleStatement),           // match `$style:`
     Export(ExportStatement),         // match `export default { ... }`
     Stmt(Stmt),                      // regular statement

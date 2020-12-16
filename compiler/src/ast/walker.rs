@@ -38,7 +38,7 @@ impl Fold for ASTWalker {
           Stmt::Decl(Decl::Var(VarDecl { kind, decls, .. })) => match kind {
             VarDeclKind::Const => {
               for decl in decls {
-                let mut typed = ConstTyped::Any;
+                let mut typed = ConstTyped::Regular;
                 match decl.name {
                   Pat::Ident(Ident { ref type_ann, .. })
                   | Pat::Array(ArrayPat { ref type_ann, .. })
@@ -136,9 +136,9 @@ impl Fold for ASTWalker {
             })),
             "$t" => match labeled.body.as_ref() {
               Stmt::Expr(ExprStmt { expr, .. }) => match expr.as_ref() {
-                Expr::JSXElement(el) => stmts.push(Statement::JSX(JSXStatement::Element(**el))),
+                Expr::JSXElement(el) => stmts.push(Statement::Template(TemplateStatement::Element(**el))),
                 Expr::JSXFragment(fragment) => {
-                  stmts.push(Statement::JSX(JSXStatement::Fragment(*fragment)))
+                  stmts.push(Statement::Template(TemplateStatement::Fragment(*fragment)))
                 }
                 _ => stmts.push(Statement::Stmt(Stmt::Labeled(labeled))),
               },
