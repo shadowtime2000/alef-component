@@ -28,6 +28,7 @@ The main concept of Alef Component is parted in three stages:
   - **Import Alef Component** - `import Logo from "./Logo.alef"`
   - **Slots** - `<Logo><img ... /></Logo>`
   - **Reuse Pattern** - reuse common logics
+  - **Inline Component** - define component in Alef Component
   - **Context** - share state in child component tree
   - **Styling** - inline CSS with scope
   - **Transition** - transition animation for view changes
