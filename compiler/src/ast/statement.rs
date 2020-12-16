@@ -41,8 +41,9 @@ pub struct SideEffectStatement {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct JSXStatement {
-    pub jsx: Box<JSX>,
+pub enum JSXStatement {
+    Element(JSXElement),
+    Fragment(JSXFragment),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

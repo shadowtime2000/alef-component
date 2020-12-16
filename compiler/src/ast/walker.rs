@@ -1,10 +1,6 @@
 // Copyright 2020 the The Alef Component authors. All rights reserved. MIT license.
 
-use super::{
-  statement::*,
-  AST,
-  {css::CSS, jsx::JSX},
-};
+use super::{css::CSS, statement::*, AST};
 use crate::resolve::Resolver;
 use std::{cell::RefCell, rc::Rc};
 use swc_ecma_ast::*;
@@ -140,12 +136,10 @@ impl Fold for ASTWalker {
             })),
             "$t" => match labeled.body.as_ref() {
               Stmt::Expr(ExprStmt { expr, .. }) => match expr.as_ref() {
-                Expr::JSXElement(el) => stmts.push(Statement::JSX(JSXStatement {
-                  jsx: Box::new(JSX::from_element(el)),
-                })),
-                Expr::JSXFragment(fragment) => stmts.push(Statement::JSX(JSXStatement {
-                  jsx: Box::new(JSX::from_fragment(fragment)),
-                })),
+                Expr::JSXElement(el) => stmts.push(Statement::JSX(JSXStatement::Element(**el))),
+                Expr::JSXFragment(fragment) => {
+                  stmts.push(Statement::JSX(JSXStatement::Fragment(*fragment)))
+                }
                 _ => stmts.push(Statement::Stmt(Stmt::Labeled(labeled))),
               },
               _ => stmts.push(Statement::Stmt(Stmt::Labeled(labeled))),

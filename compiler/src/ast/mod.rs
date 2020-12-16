@@ -1,12 +1,10 @@
 mod css;
-mod jsx;
 mod statement;
 mod transform;
 mod walker;
 
 use crate::resolve::Resolver;
 use css::CSS;
-use jsx::JSX;
 use statement::Statement;
 use std::{cell::RefCell, rc::Rc};
 use swc_ecma_ast::*;
