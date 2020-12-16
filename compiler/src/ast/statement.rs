@@ -19,13 +19,14 @@ pub struct VarStatement {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ConstKind {
-    Const,   // match regular `const`
+    Regular,   // match regular `const`
     Memo,    // match typed `Memo<T>`
     Prop,    // match typed `Prop<T>`
     Slots,   // match typed `Prop<Slots>`
     Context, // match typed `Context<T>`
+    FC,      // match typed `FC<T>`
 }
-
+    
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ConstStatement {
     pub kind: ConstKind,

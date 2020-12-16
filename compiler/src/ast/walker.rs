@@ -32,7 +32,7 @@ impl Fold for ASTWalker {
           Stmt::Decl(Decl::Var(VarDecl { kind, decls, .. })) => match kind {
             VarDeclKind::Const => {
               for decl in decls {
-                let mut kind = ConstKind::Const;
+                let mut kind = ConstKind::Regular;
                 match decl.name {
                   Pat::Ident(Ident { ref type_ann, .. })
                   | Pat::Array(ArrayPat { ref type_ann, .. })
@@ -70,6 +70,7 @@ impl Fold for ASTWalker {
                         }
                         "Context" => kind = ConstKind::Context,
                         "Memo" => kind = ConstKind::Memo,
+                        "FC" => kind = ConstKind::FC,
                         _ => {}
                       },
                       _ => {}
