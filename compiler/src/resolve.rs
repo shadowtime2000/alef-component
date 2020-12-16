@@ -1,7 +1,7 @@
 // Copyright 2020 the The Alef Component authors. All rights reserved. MIT license.
 
 use super::ast::AST;
-use indexmap::IndexSet;
+use indexmap::IndexMap;
 use serde::Serialize;
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
@@ -27,7 +27,7 @@ pub struct Resolver {
   /// dom helper module
   pub dom_helper_module: String,
   /// dependend helpers
-  pub dep_helpers: IndexSet<String>,
+  pub dep_helpers: IndexMap<String, Option<String>>,
   /// parsed AST of the component
   pub ast: Option<AST>,
   /// dependency graph
@@ -38,12 +38,10 @@ pub struct Resolver {
 
 impl Resolver {
   pub fn new(specifier: &str, dom_helper_module: &str) -> Self {
-    let mut dep_helpers = IndexSet::<String>::new();
-    dep_helpers.insert("Component".into());
     Resolver {
       specifier: specifier.into(),
       dom_helper_module: dom_helper_module.into(),
-      dep_helpers,
+      dep_helpers: IndexMap::<String, Option<String>>::new(),
       ast: None,
       dep_graph: Vec::new(),
       css: None,
@@ -53,12 +51,10 @@ impl Resolver {
 
 impl Default for Resolver {
   fn default() -> Self {
-    let mut dep_helpers = IndexSet::<String>::new();
-    dep_helpers.insert("Component".into());
     Resolver {
       specifier: "./App.alef".into(),
       dom_helper_module: "alef-dom".into(),
-      dep_helpers,
+      dep_helpers: IndexMap::<String, Option<String>>::new(),
       ast: None,
       dep_graph: Vec::new(),
       css: None,

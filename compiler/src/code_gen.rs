@@ -31,12 +31,18 @@ impl Fold for CodeGen {
     // import dom helper module
     if resolver.dom_helper_module.starts_with("window.") {
       let mut props: Vec<ObjectPatProp> = vec![];
-      for name in resolver.dep_helpers.clone() {
-        props.push(ObjectPatProp::Assign(AssignPatProp {
-          span: DUMMY_SP,
-          key: quote_ident!(name),
-          value: None,
-        }))
+      for (name, rename) in resolver.dep_helpers.clone() {
+        match rename {
+          Some(rename) => props.push(ObjectPatProp::KeyValue(KeyValuePatProp {
+            key: quote_ident!(name),
+            value: Box::new(Pat::Ident(quote_ident!(rename))),
+          })),
+          _ => props.push(ObjectPatProp::Assign(AssignPatProp {
+            span: DUMMY_SP,
+            key: quote_ident!(name),
+            value: None,
+          })),
+        }
       }
       output.push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(VarDecl {
         span: DUMMY_SP,
@@ -59,11 +65,14 @@ impl Fold for CodeGen {
       }))));
     } else {
       let mut specifiers: Vec<ImportSpecifier> = vec![];
-      for name in resolver.dep_helpers.clone() {
+      for (name, rename) in resolver.dep_helpers.clone() {
         specifiers.push(ImportSpecifier::Named(ImportNamedSpecifier {
           span: DUMMY_SP,
           local: quote_ident!(name),
-          imported: None,
+          imported: match rename {
+            Some(rename) => Some(quote_ident!(rename)),
+            _ => None,
+          },
         }))
       }
       output.push(ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl {
