@@ -1,29 +1,16 @@
 mod css;
+mod identmap;
 mod statement;
-mod transform;
+mod transformer;
 mod walker;
 
 use crate::resolve::Resolver;
-use statement::Statement;
 use std::{cell::RefCell, rc::Rc};
 use swc_ecma_visit::Fold;
-use transform::ASTransform;
-use walker::ASTWalker;
+use transformer::ASTransformer;
 
-/// AST for Alef Component.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct AST {
-  pub statements: Vec<Statement>,
-}
-
-pub fn ast_walker(resolver: Rc<RefCell<Resolver>>) -> impl Fold {
-  ASTWalker {
-    resolver: resolver.clone(),
-  }
-}
-
-pub fn ast_transform(resolver: Rc<RefCell<Resolver>>) -> impl Fold {
-  ASTransform {
+pub fn alef_transform(resolver: Rc<RefCell<Resolver>>) -> impl Fold {
+  ASTransformer {
     resolver: resolver.clone(),
   }
 }

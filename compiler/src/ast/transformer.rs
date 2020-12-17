@@ -1,32 +1,88 @@
 // Copyright 2020 the The Alef Component authors. All rights reserved. MIT license.
 
-use super::{statement::*, AST};
+use super::{identmap::IdentMap, statement::*, walker::ASTWalker};
 use crate::resolve::{format_component_name, Resolver};
-use indexmap::IndexSet;
 use std::{cell::RefCell, path::Path, rc::Rc};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::*;
 use swc_ecma_utils::quote_ident;
 use swc_ecma_visit::{noop_fold_type, Fold};
 
-/// AST Transform for Alef Component.
-pub struct ASTransform {
+/// AST Transformer for Alef Component.
+pub struct ASTransformer {
   pub resolver: Rc<RefCell<Resolver>>,
 }
 
-impl ASTransform {
-  pub fn transform(&self, ast: &AST) -> Vec<Stmt> {
-    let mut scope_idents: IndexSet<&Str> = IndexSet::new();
+impl ASTransformer {
+  pub fn transform_statements(
+    &self,
+    scope_idents: IdentMap,
+    statements: Vec<Statement>,
+  ) -> Vec<Stmt> {
+    let mut resolver = self.resolver.borrow_mut();
     let mut stmts: Vec<Stmt> = vec![];
+
+    // insert 'super(props)'
+    {
+      stmts.push(Stmt::Expr(ExprStmt {
+        span: DUMMY_SP,
+        expr: Box::new(Expr::Call(CallExpr {
+          span: DUMMY_SP,
+          callee: ExprOrSuper::Super(Super { span: DUMMY_SP }),
+          args: vec![ExprOrSpread {
+            spread: None,
+            expr: Box::new(Expr::Ident(quote_ident!("props"))),
+          }],
+          type_args: None,
+        })),
+      }))
+    }
+
+    for stmt in statements {
+      match stmt {
+        Statement::Var(VarStatement {
+          name,
+          init,
+          is_ref,
+          is_array,
+          is_async,
+        }) => stmts.push(create_swc_stmt(name, init, false)),
+        Statement::Const(ConstStatement { name, typed, init }) => match typed {
+          ConstTyped::Regular => {
+            stmts.push(create_swc_stmt(name, Some(init), true));
+          }
+          ConstTyped::Memo => {}
+          ConstTyped::Prop => {}
+          ConstTyped::Slots => {}
+          ConstTyped::Context => {}
+        },
+        Statement::FC(FCStatement {
+          scope_idents,
+          statements,
+        }) => {}
+        Statement::SideEffect(SideEffectStatement { name, stmt }) => {}
+        Statement::Template(t) => match t {
+          TemplateStatement::Element(el) => {}
+          TemplateStatement::Fragment(fragment) => {}
+        },
+        Statement::Style(StyleStatement { css }) => {}
+        Statement::Export(ExportStatement { expr }) => {}
+        _ => {}
+      }
+    }
+
     stmts
   }
 }
 
-impl Fold for ASTransform {
+impl Fold for ASTransformer {
   noop_fold_type!();
 
-  fn fold_module_items(&mut self, _: Vec<ModuleItem>) -> Vec<ModuleItem> {
-    let resolver = self.resolver.borrow_mut();
+  fn fold_module_items(&mut self, items: Vec<ModuleItem>) -> Vec<ModuleItem> {
+    let mut walker = ASTWalker::new();
+    let statements = walker.walk(items);
+    let stmts = self.transform_statements(walker.scope_idents, statements);
+    let resolver = self.resolver.borrow();
     let mut output: Vec<ModuleItem> = vec![];
 
     // import dom helper module
@@ -112,25 +168,7 @@ impl Fold for ASTransform {
                 })],
                 body: Some(BlockStmt {
                   span: DUMMY_SP,
-                  stmts: match &resolver.ast {
-                    Some(ast) => [
-                      vec![Stmt::Expr(ExprStmt {
-                        span: DUMMY_SP,
-                        expr: Box::new(Expr::Call(CallExpr {
-                          span: DUMMY_SP,
-                          callee: ExprOrSuper::Super(Super { span: DUMMY_SP }),
-                          args: vec![ExprOrSpread {
-                            spread: None,
-                            expr: Box::new(Expr::Ident(quote_ident!("props"))),
-                          }],
-                          type_args: None,
-                        })),
-                      })],
-                      self.transform(ast),
-                    ]
-                    .concat(),
-                    _ => vec![],
-                  },
+                  stmts,
                 }),
                 accessibility: None,
                 is_optional: false,
@@ -150,44 +188,20 @@ impl Fold for ASTransform {
   }
 }
 
-fn get_idents_from_pat(pat: &Pat) -> Vec<Ident> {
-  let mut idents: Vec<Ident> = vec![];
-
-  match pat {
-    Pat::Ident(id) => {
-      idents.push(id.clone());
-    }
-    Pat::Array(ArrayPat { elems, .. }) => {
-      for el in elems {
-        match el {
-          Some(el) => {
-            for id in get_idents_from_pat(el) {
-              idents.push(id);
-            }
-          }
-          _ => {}
-        }
-      }
-    }
-    Pat::Object(ObjectPat { props, .. }) => {
-      for prop in props {
-        match prop {
-          ObjectPatProp::Assign(AssignPatProp { key, .. }) => idents.push(key.clone()),
-          ObjectPatProp::KeyValue(KeyValuePatProp { value, .. }) => {
-            for id in get_idents_from_pat(value.as_ref()) {
-              idents.push(id)
-            }
-          }
-          ObjectPatProp::Rest(RestPat { arg, .. }) => {
-            for id in get_idents_from_pat(arg.as_ref()) {
-              idents.push(id)
-            }
-          }
-        }
-      }
-    }
-    _ => {}
-  };
-
-  idents
+fn create_swc_stmt(name: Pat, init: Option<Box<Expr>>, is_const: bool) -> Stmt {
+  Stmt::Decl(Decl::Var(VarDecl {
+    span: DUMMY_SP,
+    kind: if is_const {
+      VarDeclKind::Const
+    } else {
+      VarDeclKind::Let
+    },
+    declare: false,
+    decls: vec![VarDeclarator {
+      span: DUMMY_SP,
+      name,
+      init,
+      definite: false,
+    }],
+  }))
 }

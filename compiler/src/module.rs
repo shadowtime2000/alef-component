@@ -1,7 +1,7 @@
 // Copyright 2020 the The Alef Component authors. All rights reserved. MIT license.
 
 use super::{
-  ast::{ast_transform, ast_walker},
+  ast::alef_transform,
   error::{DiagnosticBuffer, ErrorBuffer},
   resolve::Resolver,
 };
@@ -80,8 +80,7 @@ impl AlefComponentModule {
     resolver: Rc<RefCell<Resolver>>,
   ) -> Result<(String, Option<String>), anyhow::Error> {
     let mut passes = chain!(
-      ast_walker(resolver.clone()),
-      ast_transform(resolver.clone()),
+      alef_transform(resolver.clone()),
       typescript::strip(),
       fixer(Some(&self.comments)),
     );
@@ -166,7 +165,6 @@ mod tests {
   fn test_component_export() {
     let source = r#"
       let name: string = 'world'
-      let tmp: Ref<string> = 'world'
 
       $t: <p>hello {name}!</p>    
     "#;
@@ -175,5 +173,10 @@ mod tests {
     assert!(code.contains("export default class App extends Component"));
     assert!(code.contains("constructor(props)"));
     assert!(code.contains("super(props)"));
+    assert!(code.contains("let name = 'world'"));
+    assert!(code.contains("p = Element(\"p\")"));
+    assert!(code.contains("text = Text(\"hello \", p)"));
+    assert!(code.contains("text2 = Text(name, p)"));
+    assert!(code.contains("text3 = Text(\"!\", p)"));
   }
 }

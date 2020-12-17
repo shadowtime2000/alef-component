@@ -1,20 +1,26 @@
 // Copyright 2020 the The Alef Component authors. All rights reserved. MIT license.
 
-use super::{css::CSS, statement::*, AST};
-use crate::resolve::Resolver;
-use std::{cell::RefCell, rc::Rc};
+use super::{css::CSS, identmap::IdentMap, statement::*};
+use crate::resolve::DependencyDescriptor;
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::*;
-use swc_ecma_visit::{noop_fold_type, Fold};
 
 /// AST walker for Alef Component.
 pub struct ASTWalker {
-  pub resolver: Rc<RefCell<Resolver>>,
+  pub dep_graph: Vec<DependencyDescriptor>,
+  pub scope_idents: IdentMap,
 }
 
 impl ASTWalker {
+  pub fn new() -> Self {
+    ASTWalker {
+      dep_graph: vec![],
+      scope_idents: IdentMap::default(),
+    }
+  }
+
   /// transform `swc_ecma_ast::Stmt` to `Vec<Statement>`
-  fn transform_stmt(&self, stmt: &Stmt) -> Vec<Statement> {
+  fn transform_stmt(&mut self, stmt: &Stmt) -> Vec<Statement> {
     let mut stmts: Vec<Statement> = vec![];
 
     match stmt {
@@ -22,96 +28,118 @@ impl ASTWalker {
         VarDeclKind::Const => {
           for decl in decls {
             let mut typed = ConstTyped::Regular;
-            match decl.name {
-              Pat::Ident(Ident { ref type_ann, .. })
-              | Pat::Array(ArrayPat { ref type_ann, .. })
-              | Pat::Object(ObjectPat { ref type_ann, .. }) => match type_ann {
-                Some(TsTypeAnn { type_ann, .. }) => match type_ann.as_ref() {
-                  TsType::TsTypeRef(TsTypeRef {
-                    type_name: TsEntityName::Ident(Ident { sym, .. }),
-                    type_params,
-                    ..
-                  }) => match sym.as_ref() {
+            if let Pat::Ident(Ident { ref type_ann, .. })
+            | Pat::Array(ArrayPat { ref type_ann, .. })
+            | Pat::Object(ObjectPat { ref type_ann, .. }) = decl.name
+            {
+              if let Some(TsTypeAnn { type_ann, .. }) = type_ann {
+                if let TsType::TsTypeRef(TsTypeRef {
+                  type_name: TsEntityName::Ident(Ident { sym, .. }),
+                  type_params,
+                  ..
+                }) = type_ann.as_ref()
+                {
+                  match sym.as_ref() {
                     "Prop" => {
                       typed = ConstTyped::Prop;
-                      match type_params {
-                        Some(type_params) => {
-                          if type_params.params.len() == 1 {
-                            match type_params.params.first() {
-                              Some(param) => match param.as_ref() {
-                                TsType::TsTypeRef(TsTypeRef {
-                                  type_name: TsEntityName::Ident(Ident { sym, .. }),
-                                  type_params: None,
-                                  ..
-                                }) => {
-                                  if sym.eq("Slots") {
-                                    typed = ConstTyped::Slots
-                                  }
-                                }
-                                _ => {}
-                              },
-                              _ => {}
+                      if let Some(type_params) = type_params {
+                        if let Some(param) = type_params.params.first() {
+                          if let TsType::TsTypeRef(TsTypeRef {
+                            type_name: TsEntityName::Ident(Ident { sym, .. }),
+                            type_params: None,
+                            ..
+                          }) = param.as_ref()
+                          {
+                            if sym.eq("Slots") {
+                              typed = ConstTyped::Slots
                             }
                           }
                         }
-                        _ => {}
                       }
                     }
                     "Context" => typed = ConstTyped::Context,
                     "Memo" => typed = ConstTyped::Memo,
-                    "FC" => match &decl.init {
-                      Some(init) => match init.as_ref() {
-                        Expr::Arrow(ArrowExpr { body, .. }) => match body {
-                          BlockStmtOrExpr::BlockStmt(block_stmt) => {
-                            let mut fc_stmts: Vec<Statement> = vec![];
-                            for stmt in &block_stmt.stmts {
-                              fc_stmts = [fc_stmts, self.transform_stmt(stmt)].concat()
+                    "FC" => {
+                      if let Some(init) = &decl.init {
+                        match init.as_ref() {
+                          Expr::Arrow(ArrowExpr { body, .. }) => match body {
+                            BlockStmtOrExpr::BlockStmt(block_stmt) => {
+                              let mut fc_walker = Self::new();
+                              let mut fc_stmts: Vec<Statement> = vec![];
+                              for stmt in &block_stmt.stmts {
+                                fc_stmts = [fc_stmts, fc_walker.transform_stmt(stmt)].concat()
+                              }
+                              for dep in fc_walker.dep_graph {
+                                self.dep_graph.push(dep)
+                              }
+                              self.scope_idents.add(&decl.name);
+                              stmts.push(Statement::FC(FCStatement {
+                                scope_idents: fc_walker.scope_idents,
+                                statements: fc_stmts,
+                              }));
+                              continue;
                             }
-                            stmts.push(Statement::FC(FCStatement { statements: fc_stmts }));
-                            continue;
-                          }
-                          BlockStmtOrExpr::Expr(expr) => {
-                            stmts.push(Statement::FC(FCStatement {
-                              statements: self.transform_stmt(&Stmt::Expr(ExprStmt {
+                            BlockStmtOrExpr::Expr(expr) => {
+                              let mut fc_walker = Self::new();
+                              let statements = fc_walker.transform_stmt(&Stmt::Expr(ExprStmt {
                                 span: DUMMY_SP,
                                 expr: expr.clone(),
-                              })),
+                              }));
+                              for dep in fc_walker.dep_graph {
+                                self.dep_graph.push(dep)
+                              }
+                              self.scope_idents.add(&decl.name);
+                              stmts.push(Statement::FC(FCStatement {
+                                scope_idents: fc_walker.scope_idents,
+                                statements,
+                              }));
+                              continue;
+                            }
+                          },
+                          Expr::Fn(FnExpr {
+                            function:
+                              Function {
+                                body: Some(body),
+                                is_generator: false,
+                                ..
+                              },
+                            ..
+                          }) => {
+                            let mut fc_walker = Self::new();
+                            let mut fc_stmts: Vec<Statement> = vec![];
+                            for stmt in &body.stmts {
+                              fc_stmts = [fc_stmts, fc_walker.transform_stmt(stmt)].concat()
+                            }
+                            for dep in fc_walker.dep_graph {
+                              self.dep_graph.push(dep)
+                            }
+                            self.scope_idents.add(&decl.name);
+                            stmts.push(Statement::FC(FCStatement {
+                              scope_idents: fc_walker.scope_idents,
+                              statements: fc_stmts,
                             }));
                             continue;
                           }
-                        },
-                        Expr::Fn(FnExpr {
-                          function:
-                            Function {
-                              body: Some(body),
-                              is_generator: false,
-                              ..
-                            },
-                          ..
-                        }) => {
-                          let mut fc_stmts: Vec<Statement> = vec![];
-                          for stmt in &body.stmts {
-                            fc_stmts = [fc_stmts, self.transform_stmt(stmt)].concat()
-                          }
-                          stmts.push(Statement::FC(FCStatement { statements: fc_stmts }));
-                          continue;
+                          _ => {}
                         }
-                        _ => {}
-                      },
-                      _ => {}
-                    },
+                      }
+                    }
                     _ => {}
-                  },
-                  _ => {}
-                },
-                _ => {}
-              },
-              _ => {}
-            };
+                  }
+                }
+              }
+            }
+            match typed {
+              ConstTyped::Regular => self.scope_idents.add(&decl.name),
+              ConstTyped::Memo => self.scope_idents.add_memo(&decl.name),
+              ConstTyped::Prop => self.scope_idents.add_prop(&decl.name),
+              ConstTyped::Slots => self.scope_idents.add_slots(&decl.name),
+              ConstTyped::Context => self.scope_idents.add_context(&decl.name),
+            }
             stmts.push(Statement::Const(ConstStatement {
               typed,
               name: decl.name.clone(),
-              expr: decl.init.clone().unwrap(),
+              init: decl.init.clone().unwrap(),
             }))
           }
         }
@@ -120,31 +148,35 @@ impl ASTWalker {
             let mut is_array = false;
             let mut is_ref = false;
             let is_async = match decl.init {
-              Some(ref expr) => match expr.as_ref() {
+              Some(ref init) => match init.as_ref() {
                 Expr::Await(_) => true,
                 _ => false,
               },
               _ => false,
             };
-            match decl.name {
-              Pat::Ident(Ident { ref type_ann, .. })
-              | Pat::Array(ArrayPat { ref type_ann, .. })
-              | Pat::Object(ObjectPat { ref type_ann, .. }) => match type_ann {
-                Some(TsTypeAnn { type_ann, .. }) => match type_ann.as_ref() {
+            if let Pat::Ident(Ident { ref type_ann, .. })
+            | Pat::Array(ArrayPat { ref type_ann, .. })
+            | Pat::Object(ObjectPat { ref type_ann, .. }) = decl.name
+            {
+              if let Some(TsTypeAnn { type_ann, .. }) = type_ann {
+                match type_ann.as_ref() {
                   TsType::TsArrayType(_) => is_array = true,
                   TsType::TsTypeRef(TsTypeRef {
                     type_name: TsEntityName::Ident(Ident { sym, .. }),
                     ..
                   }) => is_ref = sym.eq("Ref"),
                   _ => {}
-                },
-                _ => {}
-              },
-              _ => {}
-            };
+                }
+              }
+            }
+            if is_ref {
+              self.scope_idents.add(&decl.name)
+            } else {
+              self.scope_idents.add_state(&decl.name, is_array, is_async)
+            }
             stmts.push(Statement::Var(VarStatement {
               name: decl.name.clone(),
-              expr: decl.init.clone(),
+              init: decl.init.clone(),
               is_array,
               is_ref,
               is_async,
@@ -195,15 +227,8 @@ impl ASTWalker {
 
     stmts
   }
-}
 
-/// Folds the component to an AST then stores it in resolver,
-/// and returns a empty module.
-impl Fold for ASTWalker {
-  noop_fold_type!();
-
-  fn fold_module_items(&mut self, module_items: Vec<ModuleItem>) -> Vec<ModuleItem> {
-    let mut resolver = self.resolver.borrow_mut();
+  pub fn walk(&mut self, module_items: Vec<ModuleItem>) -> Vec<Statement> {
     let mut stmts: Vec<Statement> = vec![];
 
     for item in module_items {
@@ -211,11 +236,25 @@ impl Fold for ASTWalker {
         ModuleItem::ModuleDecl(decl) => match decl {
           ModuleDecl::Import(ImportDecl {
             specifiers, src, ..
-          }) => stmts.push(Statement::Import(ImportStatement {
-            specifiers,
-            src: src.value.as_ref().into(),
-            is_alef_component: src.value.as_ref().ends_with(".alef"),
-          })),
+          }) => {
+            let src = src.value.as_ref();
+            for specifier in specifiers.clone() {
+              if let ImportSpecifier::Default(ImportDefaultSpecifier { local, .. })
+              | ImportSpecifier::Named(ImportNamedSpecifier { local, .. }) = specifier
+              {
+                self.scope_idents.add(&Pat::Ident(local))
+              }
+            }
+            self.dep_graph.push(DependencyDescriptor {
+              specifier: src.into(),
+              is_dynamic: false,
+            });
+            stmts.push(Statement::Import(ImportStatement {
+              specifiers,
+              src: src.into(),
+              is_alef_component: src.ends_with(".alef"),
+            }))
+          }
           ModuleDecl::ExportDefaultExpr(ExportDefaultExpr { expr, .. }) => {
             stmts.push(Statement::Export(ExportStatement { expr }))
           }
@@ -225,10 +264,6 @@ impl Fold for ASTWalker {
       }
     }
 
-    // store the AST to resolver
-    resolver.ast = Some(AST { statements: stmts });
-
-    // return a empty moudle
-    vec![]
+    stmts
   }
 }

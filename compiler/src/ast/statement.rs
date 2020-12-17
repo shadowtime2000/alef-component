@@ -1,4 +1,4 @@
-use super::css::CSS;
+use super::{css::CSS, identmap::IdentMap};
 use swc_ecma_ast::*;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -11,9 +11,9 @@ pub struct ImportStatement {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VarStatement {
     pub name: Pat,
-    pub expr: Option<Box<Expr>>,
-    pub is_array: bool, // match typed `Array<T>`
+    pub init: Option<Box<Expr>>,
     pub is_ref: bool,   // match typed `Ref<T>`
+    pub is_array: bool, // match typed `Array<T>`
     pub is_async: bool, // match `let data = await fetch(...)`
 }
 
@@ -30,11 +30,12 @@ pub enum ConstTyped {
 pub struct ConstStatement {
     pub name: Pat,
     pub typed: ConstTyped,
-    pub expr: Box<Expr>,
+    pub init: Box<Expr>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FCStatement {
+    pub scope_idents: IdentMap,
     pub statements: Vec<Statement>,
 }
 

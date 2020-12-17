@@ -1,6 +1,5 @@
 // Copyright 2020 the The Alef Component authors. All rights reserved. MIT license.
 
-use super::ast::AST;
 use indexmap::IndexMap;
 use serde::Serialize;
 
@@ -28,8 +27,6 @@ pub struct Resolver {
   pub dom_helper_module: String,
   /// dependend helpers
   pub dep_helpers: IndexMap<String, Option<String>>,
-  /// parsed AST of the component
-  pub ast: Option<AST>,
   /// dependency graph
   pub dep_graph: Vec<DependencyDescriptor>,
   /// inline styles
@@ -42,7 +39,6 @@ impl Resolver {
       specifier: specifier.into(),
       dom_helper_module: dom_helper_module.into(),
       dep_helpers: IndexMap::<String, Option<String>>::new(),
-      ast: None,
       dep_graph: Vec::new(),
       css: None,
     }
@@ -55,7 +51,6 @@ impl Default for Resolver {
       specifier: "./App.alef".into(),
       dom_helper_module: "alef-dom".into(),
       dep_helpers: IndexMap::<String, Option<String>>::new(),
-      ast: None,
       dep_graph: Vec::new(),
       css: None,
     }
