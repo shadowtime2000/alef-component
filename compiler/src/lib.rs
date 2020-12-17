@@ -1,7 +1,6 @@
 // Copyright 2020 the The Alef Component authors. All rights reserved. MIT license.
 
 mod ast;
-mod code_gen;
 mod error;
 mod module;
 mod resolve;

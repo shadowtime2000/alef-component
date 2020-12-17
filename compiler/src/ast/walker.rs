@@ -13,6 +13,7 @@ pub struct ASTWalker {
 }
 
 impl ASTWalker {
+  /// transform `swc_ecma_ast::Stmt` to `Vec<Statement>`
   fn transform_stmt(&self, stmt: &Stmt) -> Vec<Statement> {
     let mut stmts: Vec<Statement> = vec![];
 

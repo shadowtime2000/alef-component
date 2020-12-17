@@ -4,10 +4,8 @@ mod transform;
 mod walker;
 
 use crate::resolve::Resolver;
-use css::CSS;
 use statement::Statement;
 use std::{cell::RefCell, rc::Rc};
-use swc_ecma_ast::*;
 use swc_ecma_visit::Fold;
 use transform::ASTransform;
 use walker::ASTWalker;
@@ -24,6 +22,8 @@ pub fn ast_walker(resolver: Rc<RefCell<Resolver>>) -> impl Fold {
   }
 }
 
-pub fn ast_trasnform(ast: &AST) -> Vec<Stmt> {
-  ASTransform::from(ast).transform()
+pub fn ast_transform(resolver: Rc<RefCell<Resolver>>) -> impl Fold {
+  ASTransform {
+    resolver: resolver.clone(),
+  }
 }

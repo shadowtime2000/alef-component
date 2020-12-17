@@ -1,4 +1,4 @@
-use super::*;
+use super::css::CSS;
 use swc_ecma_ast::*;
 
 #[derive(Clone, Debug, Eq, PartialEq)]

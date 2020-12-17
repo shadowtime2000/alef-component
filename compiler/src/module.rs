@@ -1,8 +1,7 @@
 // Copyright 2020 the The Alef Component authors. All rights reserved. MIT license.
 
 use super::{
-  ast::ast_walker,
-  code_gen::code_gen,
+  ast::{ast_transform, ast_walker},
   error::{DiagnosticBuffer, ErrorBuffer},
   resolve::Resolver,
 };
@@ -18,7 +17,7 @@ use swc_ecmascript::{
   codegen::{text_writer::JsWriter, Node},
   parser::lexer::Lexer,
   parser::{JscTarget, StringInput, Syntax, TsConfig},
-  transforms::{fixer, helpers},
+  transforms::{fixer, helpers, typescript},
   visit::{Fold, FoldWith},
 };
 
@@ -82,7 +81,8 @@ impl AlefComponentModule {
   ) -> Result<(String, Option<String>), anyhow::Error> {
     let mut passes = chain!(
       ast_walker(resolver.clone()),
-      code_gen(resolver.clone()),
+      ast_transform(resolver.clone()),
+      typescript::strip(),
       fixer(Some(&self.comments)),
     );
 
