@@ -5,7 +5,7 @@ use swc_ecma_ast::*;
 pub struct ImportStatement {
     pub specifiers: Vec<ImportSpecifier>,
     pub src: String,
-    is_alef_component: bool, // match import App from "./App.alef"
+    pub is_alef_component: bool, // match import App from "./App.alef"
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -24,7 +24,6 @@ pub enum ConstTyped {
     Prop,    // match typed `Prop<T>`
     Slots,   // match typed `Prop<Slots>`
     Context, // match typed `Context<T>`
-    FC,      // match typed `FC<T>`
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -32,6 +31,11 @@ pub struct ConstStatement {
     pub name: Pat,
     pub typed: ConstTyped,
     pub expr: Box<Expr>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FCStatement {
+    pub statements: Vec<Statement>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -61,6 +65,7 @@ pub enum Statement {
     Import(ImportStatement),         // match `import ... from "..."`
     Var(VarStatement),               // match `var` and `let`
     Const(ConstStatement),           // match `const`
+    FC(FCStatement),                 // match `FC<Props>`
     SideEffect(SideEffectStatement), // match `$:` and `$_{NAME}:`
     Template(TemplateStatement),     // match `$t:`
     Style(StyleStatement),           // match `$style:`

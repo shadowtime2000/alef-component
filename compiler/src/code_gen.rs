@@ -34,7 +34,7 @@ impl Fold for CodeGen {
       for (name, rename) in resolver.dep_helpers.clone() {
         match rename {
           Some(rename) => props.push(ObjectPatProp::KeyValue(KeyValuePatProp {
-            key: quote_ident!(name),
+            key: PropName::Ident(quote_ident!(name)),
             value: Box::new(Pat::Ident(quote_ident!(rename))),
           })),
           _ => props.push(ObjectPatProp::Assign(AssignPatProp {
