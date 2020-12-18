@@ -40,13 +40,9 @@ impl ASTransformer {
 
     for stmt in statements {
       match stmt {
-        Statement::Var(VarStatement {
-          name,
-          init,
-          is_ref,
-          is_array,
-          is_async,
-        }) => stmts.push(create_swc_stmt(name, init, false)),
+        Statement::Var(VarStatement { name, init, .. }) => {
+          stmts.push(create_swc_stmt(name, init, false))
+        }
         Statement::Const(ConstStatement { name, typed, init }) => match typed {
           ConstTyped::Regular => {
             stmts.push(create_swc_stmt(name, Some(init), true));
@@ -145,7 +141,7 @@ impl Fold for ASTransformer {
       })));
     }
 
-    // export component
+    // export component class
     {
       let path = Path::new(resolver.specifier.as_str());
       let file_name = path.file_name().as_ref().unwrap().to_str().unwrap();
