@@ -1,21 +1,39 @@
 // Copyright 2020 the The Alef Component authors. All rights reserved. MIT license.
 
-use indexmap::IndexSet;
+use indexmap::{IndexMap, IndexSet};
 use std::default::Default;
 use swc_ecma_ast::*;
+
+const HELPER_IDENTS: [&'static str; 14] = [
+    "Component",
+    "New",
+    "Element",
+    "Fragment",
+    "If",
+    "IfElse",
+    "List",
+    "Text",
+    "Space",
+    "Style",
+    "Memo",
+    "Effect",
+    "banchUpdate",
+    "nope",
+];
 
 pub type IdentSet = IndexSet<String>;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct IdentMap {
-    pub scope: IdentSet,
-    pub state: IdentSet,
-    pub array_state: IdentSet,
-    pub async_state: IdentSet,
-    pub memo: IdentSet,
-    pub prop: IdentSet,
-    pub slots: IdentSet,
-    pub context: IdentSet,
+    pub helpers: IndexMap<String, u16>,
+    pub scopes: IdentSet,
+    pub states: IdentSet,
+    pub array_states: IdentSet,
+    pub async_states: IdentSet,
+    pub memos: IdentSet,
+    pub props: IdentSet,
+    pub slotss: IdentSet,
+    pub contexts: IdentSet,
 }
 
 impl IdentMap {
@@ -23,62 +41,77 @@ impl IdentMap {
         for ident in get_idents_from_pat(&pat) {
             let id = ident.sym.as_ref().to_string();
             match name {
-                "scope" => self.scope.insert(id),
-                "state" => self.state.insert(id),
-                "array_state" => self.array_state.insert(id),
-                "async_state" => self.async_state.insert(id),
-                "memo" => self.memo.insert(id),
-                "prop" => self.prop.insert(id),
-                "slots" => self.slots.insert(id),
-                "context" => self.context.insert(id),
+                "scope" => {
+                    if self.helpers.contains_key(&id) {
+                        self.helpers
+                            .insert(id.clone(), self.helpers.get(&id).unwrap() + 1);
+                    }
+                    self.scopes.insert(id)
+                }
+                "state" => self.states.insert(id),
+                "array_state" => self.array_states.insert(id),
+                "async_state" => self.async_states.insert(id),
+                "memo" => self.memos.insert(id),
+                "prop" => self.props.insert(id),
+                "slots" => self.slotss.insert(id),
+                "context" => self.contexts.insert(id),
                 _ => false,
             };
         }
     }
-    fn add_to_state(&mut self, pat: &Pat) {
+    fn add_to_states(&mut self, pat: &Pat) {
         self.add(pat);
-        self.add_to("state", pat);
+        self.add_to("states", pat);
+    }
+    pub fn add_helper_refs(&mut self, id: String, n: u16) {
+        self.helpers
+            .insert(id.clone(), self.helpers.get(&id).unwrap() + n);
     }
     pub fn add(&mut self, pat: &Pat) {
-        self.add_to("scope", pat);
+        self.add_to("scopes", pat);
     }
     pub fn add_state(&mut self, pat: &Pat, is_array: bool, is_async: bool) {
-        self.add_to_state(pat);
+        self.add_to_states(pat);
         if is_array {
-            self.add_to("array_state", pat);
+            self.add_to("array_states", pat);
         } else if is_async {
-            self.add_to("async_state", pat);
+            self.add_to("async_states", pat);
         }
     }
     pub fn add_memo(&mut self, pat: &Pat) {
-        self.add_to_state(pat);
-        self.add_to("memo", pat);
+        self.add_to_states(pat);
+        self.add_to("memos", pat);
     }
     pub fn add_prop(&mut self, pat: &Pat) {
-        self.add_to_state(pat);
-        self.add_to("prop", pat);
+        self.add_to_states(pat);
+        self.add_to("props", pat);
     }
     pub fn add_slots(&mut self, pat: &Pat) {
-        self.add_to_state(pat);
-        self.add_to("slots", pat);
+        self.add_to_states(pat);
+        self.add_to("slotss", pat);
     }
     pub fn add_context(&mut self, pat: &Pat) {
-        self.add_to_state(pat);
-        self.add_to("context", pat);
+        self.add_to_states(pat);
+        self.add_to("contexts", pat);
     }
 }
 
 impl Default for IdentMap {
     fn default() -> Self {
+        let mut helpers = IndexMap::<String, u16>::new();
+        for indent in HELPER_IDENTS.iter() {
+            helpers.insert(indent.to_string(), 0);
+        }
         IdentMap {
-            scope: IdentSet::new(),
-            state: IdentSet::new(),
-            array_state: IdentSet::new(),
-            async_state: IdentSet::new(),
-            memo: IdentSet::new(),
-            prop: IdentSet::new(),
-            slots: IdentSet::new(),
-            context: IdentSet::new(),
+            helpers,
+            scopes: IdentSet::new(),
+            states: IdentSet::new(),
+            array_states: IdentSet::new(),
+            async_states: IdentSet::new(),
+            memos: IdentSet::new(),
+            props: IdentSet::new(),
+            slotss: IdentSet::new(),
+            contexts: IdentSet::new(),
         }
     }
 }

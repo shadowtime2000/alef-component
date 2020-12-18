@@ -69,6 +69,9 @@ impl ASTWalker {
                               for stmt in &block_stmt.stmts {
                                 fc_stmts = [fc_stmts, fc_walker.transform_stmt(stmt)].concat()
                               }
+                              for (id, refs) in fc_walker.scope_idents.helpers.clone() {
+                                self.scope_idents.add_helper_refs(id, refs)
+                              }
                               for dep in fc_walker.dep_graph {
                                 self.dep_graph.push(dep)
                               }
@@ -85,6 +88,9 @@ impl ASTWalker {
                                 span: DUMMY_SP,
                                 expr: expr.clone(),
                               }));
+                              for (id, refs) in fc_walker.scope_idents.helpers.clone() {
+                                self.scope_idents.add_helper_refs(id, refs)
+                              }
                               for dep in fc_walker.dep_graph {
                                 self.dep_graph.push(dep)
                               }
@@ -109,6 +115,9 @@ impl ASTWalker {
                             let mut fc_stmts: Vec<Statement> = vec![];
                             for stmt in &body.stmts {
                               fc_stmts = [fc_stmts, fc_walker.transform_stmt(stmt)].concat()
+                            }
+                            for (id, refs) in fc_walker.scope_idents.helpers.clone() {
+                              self.scope_idents.add_helper_refs(id, refs)
                             }
                             for dep in fc_walker.dep_graph {
                               self.dep_graph.push(dep)
@@ -169,6 +178,7 @@ impl ASTWalker {
                 }
               }
             }
+            // todo: check `let a = [1, 2, 3]` get array definite
             if is_ref {
               self.scope_idents.add(&decl.name)
             } else {
@@ -197,18 +207,18 @@ impl ASTWalker {
             Expr::JSXFragment(fragment) => stmts.push(Statement::Template(
               TemplateStatement::Fragment(fragment.clone()),
             )),
-            _ => stmts.push(Statement::Stmt(Stmt::Labeled(labeled.clone()))),
+            _ => stmts.push(Statement::Stmt(stmt.clone())),
           },
-          _ => stmts.push(Statement::Stmt(Stmt::Labeled(labeled.clone()))),
+          _ => stmts.push(Statement::Stmt(stmt.clone())),
         },
         "$style" => match labeled.body.as_ref() {
           Stmt::Expr(ExprStmt { expr, .. }) => match expr.as_ref() {
             Expr::Tpl(tpl) => stmts.push(Statement::Style(StyleStatement {
               css: Box::new(CSS::parse(tpl)),
             })),
-            _ => stmts.push(Statement::Stmt(Stmt::Labeled(labeled.clone()))),
+            _ => stmts.push(Statement::Stmt(stmt.clone())),
           },
-          _ => stmts.push(Statement::Stmt(Stmt::Labeled(labeled.clone()))),
+          _ => stmts.push(Statement::Stmt(stmt.clone())),
         },
         _ => {
           let label = labeled.label.as_ref();
@@ -216,11 +226,22 @@ impl ASTWalker {
             stmts.push(Statement::SideEffect(SideEffectStatement {
               name: Some(label.trim_start_matches("$_").into()),
               stmt: labeled.body.clone(),
-            }))
+            }));
           } else {
-            stmts.push(Statement::Stmt(Stmt::Labeled(labeled.clone())))
+            stmts.push(Statement::Stmt(stmt.clone()));
           }
         }
+      },
+      Stmt::Return(ReturnStmt {
+        arg: Some(expr), ..
+      }) => match expr.as_ref() {
+        Expr::JSXElement(el) => stmts.push(Statement::Template(TemplateStatement::Element(
+          el.as_ref().clone(),
+        ))),
+        Expr::JSXFragment(fragment) => stmts.push(Statement::Template(
+          TemplateStatement::Fragment(fragment.clone()),
+        )),
+        _ => stmts.push(Statement::Stmt(stmt.clone())),
       },
       _ => stmts.push(Statement::Stmt(stmt.clone())),
     };
