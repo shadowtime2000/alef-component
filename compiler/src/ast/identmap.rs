@@ -25,7 +25,7 @@ pub type IdentSet = IndexSet<String>;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct IdentMap {
-    pub helpers: IndexMap<String, u16>,
+    pub helper_refs: IndexMap<String, u16>,
     pub scopes: IdentSet,
     pub states: IdentSet,
     pub array_states: IdentSet,
@@ -37,14 +37,14 @@ pub struct IdentMap {
 }
 
 impl IdentMap {
-    fn add_to(&mut self, name: &str, pat: &Pat) {
+    fn mark_as(&mut self, name: &str, pat: &Pat) {
         for ident in get_idents_from_pat(&pat) {
             let id = ident.sym.as_ref().to_string();
             match name {
                 "scope" => {
-                    if self.helpers.contains_key(&id) {
-                        self.helpers
-                            .insert(id.clone(), self.helpers.get(&id).unwrap() + 1);
+                    if self.helper_refs.contains_key(&id) {
+                        self.helper_refs
+                            .insert(id.clone(), self.helper_refs.get(&id).unwrap() + 1);
                     }
                     self.scopes.insert(id)
                 }
@@ -59,51 +59,76 @@ impl IdentMap {
             };
         }
     }
-    fn add_to_states(&mut self, pat: &Pat) {
-        self.add(pat);
-        self.add_to("states", pat);
+    fn mark_as_state(&mut self, pat: &Pat) {
+        self.mark(pat);
+        self.mark_as("state", pat);
     }
-    pub fn add_helper_refs(&mut self, id: String, n: u16) {
-        self.helpers
-            .insert(id.clone(), self.helpers.get(&id).unwrap() + n);
+    pub fn mark(&mut self, pat: &Pat) {
+        self.mark_as("scope", pat);
     }
-    pub fn add(&mut self, pat: &Pat) {
-        self.add_to("scopes", pat);
-    }
-    pub fn add_state(&mut self, pat: &Pat, is_array: bool, is_async: bool) {
-        self.add_to_states(pat);
+    pub fn mark_state(&mut self, pat: &Pat, is_array: bool, is_async: bool) {
+        self.mark_as_state(pat);
         if is_array {
-            self.add_to("array_states", pat);
+            self.mark_as("array_state", pat);
         } else if is_async {
-            self.add_to("async_states", pat);
+            self.mark_as("async_state", pat);
         }
     }
-    pub fn add_memo(&mut self, pat: &Pat) {
-        self.add_to_states(pat);
-        self.add_to("memos", pat);
+    pub fn mark_memo(&mut self, pat: &Pat) {
+        self.mark_as_state(pat);
+        self.mark_as("memo", pat);
     }
-    pub fn add_prop(&mut self, pat: &Pat) {
-        self.add_to_states(pat);
-        self.add_to("props", pat);
+    pub fn mark_prop(&mut self, pat: &Pat) {
+        self.mark_as_state(pat);
+        self.mark_as("prop", pat);
     }
-    pub fn add_slots(&mut self, pat: &Pat) {
-        self.add_to_states(pat);
-        self.add_to("slotss", pat);
+    pub fn mark_slots(&mut self, pat: &Pat) {
+        self.mark_as_state(pat);
+        self.mark_as("slots", pat);
     }
-    pub fn add_context(&mut self, pat: &Pat) {
-        self.add_to_states(pat);
-        self.add_to("contexts", pat);
+    pub fn mark_context(&mut self, pat: &Pat) {
+        self.mark_as_state(pat);
+        self.mark_as("context", pat);
+    }
+    pub fn tokenize_helper(&mut self, id: String, refs: u16) {
+        self.helper_refs
+            .insert(id.clone(), self.helper_refs.get(&id).unwrap() + refs);
+    }
+    pub fn create_ident(&mut self, name: &str) -> String {
+        if self.helper_refs.contains_key(name) {
+            let refs = self.helper_refs.get(name).unwrap();
+            if *refs > 0 {
+                return format!("{}{}", name, refs + 1);
+            }
+            return name.into();
+        }
+        let mut idx = 0;
+        if self.scopes.contains(name) {
+            idx = 1;
+            loop {
+                let name = format!("{}{}", name, idx + 1);
+                if !self.scopes.contains(&name) {
+                    break;
+                }
+                idx = idx + 1;
+            }
+        }
+        if idx > 0 {
+            format!("{}{}", name, idx + 1)
+        } else {
+            name.into()
+        }
     }
 }
 
 impl Default for IdentMap {
     fn default() -> Self {
-        let mut helpers = IndexMap::<String, u16>::new();
+        let mut helper_refs = IndexMap::<String, u16>::new();
         for indent in HELPER_IDENTS.iter() {
-            helpers.insert(indent.to_string(), 0);
+            helper_refs.insert(indent.to_string(), 0);
         }
         IdentMap {
-            helpers,
+            helper_refs,
             scopes: IdentSet::new(),
             states: IdentSet::new(),
             array_states: IdentSet::new(),

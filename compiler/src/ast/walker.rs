@@ -69,13 +69,13 @@ impl ASTWalker {
                               for stmt in &block_stmt.stmts {
                                 fc_stmts = [fc_stmts, fc_walker.transform_stmt(stmt)].concat()
                               }
-                              for (id, refs) in fc_walker.scope_idents.helpers.clone() {
-                                self.scope_idents.add_helper_refs(id, refs)
+                              for (id, refs) in fc_walker.scope_idents.helper_refs.clone() {
+                                self.scope_idents.tokenize_helper(id, refs)
                               }
                               for dep in fc_walker.dep_graph {
                                 self.dep_graph.push(dep)
                               }
-                              self.scope_idents.add(&decl.name);
+                              self.scope_idents.mark(&decl.name);
                               stmts.push(Statement::FC(FCStatement {
                                 scope_idents: fc_walker.scope_idents,
                                 statements: fc_stmts,
@@ -88,13 +88,13 @@ impl ASTWalker {
                                 span: DUMMY_SP,
                                 expr: expr.clone(),
                               }));
-                              for (id, refs) in fc_walker.scope_idents.helpers.clone() {
-                                self.scope_idents.add_helper_refs(id, refs)
+                              for (id, refs) in fc_walker.scope_idents.helper_refs.clone() {
+                                self.scope_idents.tokenize_helper(id, refs)
                               }
                               for dep in fc_walker.dep_graph {
                                 self.dep_graph.push(dep)
                               }
-                              self.scope_idents.add(&decl.name);
+                              self.scope_idents.mark(&decl.name);
                               stmts.push(Statement::FC(FCStatement {
                                 scope_idents: fc_walker.scope_idents,
                                 statements,
@@ -116,13 +116,13 @@ impl ASTWalker {
                             for stmt in &body.stmts {
                               fc_stmts = [fc_stmts, fc_walker.transform_stmt(stmt)].concat()
                             }
-                            for (id, refs) in fc_walker.scope_idents.helpers.clone() {
-                              self.scope_idents.add_helper_refs(id, refs)
+                            for (id, refs) in fc_walker.scope_idents.helper_refs.clone() {
+                              self.scope_idents.tokenize_helper(id, refs)
                             }
                             for dep in fc_walker.dep_graph {
                               self.dep_graph.push(dep)
                             }
-                            self.scope_idents.add(&decl.name);
+                            self.scope_idents.mark(&decl.name);
                             stmts.push(Statement::FC(FCStatement {
                               scope_idents: fc_walker.scope_idents,
                               statements: fc_stmts,
@@ -139,11 +139,11 @@ impl ASTWalker {
               }
             }
             match typed {
-              ConstTyped::Regular => self.scope_idents.add(&decl.name),
-              ConstTyped::Memo => self.scope_idents.add_memo(&decl.name),
-              ConstTyped::Prop => self.scope_idents.add_prop(&decl.name),
-              ConstTyped::Slots => self.scope_idents.add_slots(&decl.name),
-              ConstTyped::Context => self.scope_idents.add_context(&decl.name),
+              ConstTyped::Regular => self.scope_idents.mark(&decl.name),
+              ConstTyped::Memo => self.scope_idents.mark_memo(&decl.name),
+              ConstTyped::Prop => self.scope_idents.mark_prop(&decl.name),
+              ConstTyped::Slots => self.scope_idents.mark_slots(&decl.name),
+              ConstTyped::Context => self.scope_idents.mark_context(&decl.name),
             }
             stmts.push(Statement::Const(ConstStatement {
               typed,
@@ -180,9 +180,9 @@ impl ASTWalker {
             }
             // todo: check `let a = [1, 2, 3]` get array definite
             if is_ref {
-              self.scope_idents.add(&decl.name)
+              self.scope_idents.mark(&decl.name)
             } else {
-              self.scope_idents.add_state(&decl.name, is_array, is_async)
+              self.scope_idents.mark_state(&decl.name, is_array, is_async)
             }
             stmts.push(Statement::Var(VarStatement {
               name: decl.name.clone(),
@@ -263,7 +263,7 @@ impl ASTWalker {
               if let ImportSpecifier::Default(ImportDefaultSpecifier { local, .. })
               | ImportSpecifier::Named(ImportNamedSpecifier { local, .. }) = specifier
               {
-                self.scope_idents.add(&Pat::Ident(local))
+                self.scope_idents.mark(&Pat::Ident(local))
               }
             }
             self.dep_graph.push(DependencyDescriptor {

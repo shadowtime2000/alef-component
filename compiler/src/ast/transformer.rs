@@ -2,6 +2,7 @@
 
 use super::{identmap::IdentMap, statement::*, walker::ASTWalker};
 use crate::resolve::{format_component_name, Resolver};
+use indexmap::IndexMap;
 use std::{cell::RefCell, path::Path, rc::Rc};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::*;
@@ -18,9 +19,10 @@ impl ASTransformer {
     &self,
     scope_idents: IdentMap,
     statements: Vec<Statement>,
-  ) -> Vec<Stmt> {
+  ) -> (Vec<Stmt>, IndexMap<String, Option<String>>) {
     let mut resolver = self.resolver.borrow_mut();
     let mut stmts: Vec<Stmt> = vec![];
+    let mut dom_helpers: IndexMap<String, Option<String>> = IndexMap::new();
 
     // insert 'super(props)'
     {
@@ -60,6 +62,7 @@ impl ASTransformer {
         Statement::Template(t) => match t {
           TemplateStatement::Element(el) => {}
           TemplateStatement::Fragment(fragment) => {}
+          TemplateStatement::If(r#if) => {}
         },
         Statement::Style(StyleStatement { css }) => {}
         Statement::Export(ExportStatement { expr }) => {}
@@ -67,7 +70,7 @@ impl ASTransformer {
       }
     }
 
-    stmts
+    (stmts, dom_helpers)
   }
 }
 
@@ -77,26 +80,32 @@ impl Fold for ASTransformer {
   fn fold_module_items(&mut self, items: Vec<ModuleItem>) -> Vec<ModuleItem> {
     let mut walker = ASTWalker::new();
     let statements = walker.walk(items);
-    let stmts = self.transform_statements(walker.scope_idents.clone(), statements);
+    let (stmts, mut dom_helpers) =
+      self.transform_statements(walker.scope_idents.clone(), statements);
     let mut resolver = self.resolver.borrow_mut();
     let mut output: Vec<ModuleItem> = vec![];
+
+    let helper_component_id = walker.scope_idents.create_ident("Component");
+    dom_helpers.insert("Component".into(), Some(helper_component_id.clone()));
 
     // import dom helper module
     if resolver.dom_helper_module.starts_with("window.") {
       let mut props: Vec<ObjectPatProp> = vec![];
-      for (name, refs) in walker.scope_idents.helpers {
-        if refs > 0 {
-          props.push(ObjectPatProp::KeyValue(KeyValuePatProp {
-            key: PropName::Ident(quote_ident!(name.clone())),
-            value: Box::new(Pat::Ident(quote_ident!(format!("{}{}", name, refs + 1)))),
-          }))
-        } else {
-          props.push(ObjectPatProp::Assign(AssignPatProp {
-            span: DUMMY_SP,
-            key: quote_ident!(name),
-            value: None,
-          }))
+      for (name, rename) in dom_helpers {
+        if let Some(rename) = rename {
+          if rename != name {
+            props.push(ObjectPatProp::KeyValue(KeyValuePatProp {
+              key: PropName::Ident(quote_ident!(name.clone())),
+              value: Box::new(Pat::Ident(quote_ident!(rename))),
+            }));
+            continue;
+          }
         }
+        props.push(ObjectPatProp::Assign(AssignPatProp {
+          span: DUMMY_SP,
+          key: quote_ident!(name),
+          value: None,
+        }));
       }
       output.push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(VarDecl {
         span: DUMMY_SP,
@@ -119,18 +128,28 @@ impl Fold for ASTransformer {
       }))));
     } else {
       let mut specifiers: Vec<ImportSpecifier> = vec![];
-      for (name, refs) in walker.scope_idents.helpers {
+      for (name, rename) in dom_helpers {
         specifiers.push(ImportSpecifier::Named(ImportNamedSpecifier {
           span: DUMMY_SP,
-          local: if refs > 0 {
-            quote_ident!(format!("{}{}", name.clone(), refs + 1))
-          } else {
-            quote_ident!(name.clone())
+          local: match rename.clone() {
+            Some(rename) => {
+              if rename != name {
+                quote_ident!(rename)
+              } else {
+                quote_ident!(name.clone())
+              }
+            }
+            _ => quote_ident!(name.clone()),
           },
-          imported: if refs > 0 {
-            Some(quote_ident!(name))
-          } else {
-            None
+          imported: match rename {
+            Some(rename) => {
+              if rename != name {
+                Some(quote_ident!(name))
+              } else {
+                None
+              }
+            }
+            _ => None,
           },
         }))
       }
@@ -175,7 +194,7 @@ impl Fold for ASTransformer {
                 accessibility: None,
                 is_optional: false,
               })],
-              super_class: Some(Box::new(Expr::Ident(quote_ident!("Component")))),
+              super_class: Some(Box::new(Expr::Ident(quote_ident!(helper_component_id)))),
               is_abstract: false,
               type_params: None,
               super_type_params: None,
