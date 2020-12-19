@@ -77,24 +77,25 @@ impl Fold for ASTransformer {
   fn fold_module_items(&mut self, items: Vec<ModuleItem>) -> Vec<ModuleItem> {
     let mut walker = ASTWalker::new();
     let statements = walker.walk(items);
-    let stmts = self.transform_statements(walker.scope_idents, statements);
-    let resolver = self.resolver.borrow();
+    let stmts = self.transform_statements(walker.scope_idents.clone(), statements);
+    let mut resolver = self.resolver.borrow_mut();
     let mut output: Vec<ModuleItem> = vec![];
 
     // import dom helper module
     if resolver.dom_helper_module.starts_with("window.") {
       let mut props: Vec<ObjectPatProp> = vec![];
-      for (name, rename) in resolver.dep_helpers.clone() {
-        match rename {
-          Some(rename) => props.push(ObjectPatProp::KeyValue(KeyValuePatProp {
-            key: PropName::Ident(quote_ident!(name)),
-            value: Box::new(Pat::Ident(quote_ident!(rename))),
-          })),
-          _ => props.push(ObjectPatProp::Assign(AssignPatProp {
+      for (name, refs) in walker.scope_idents.helpers {
+        if refs > 0 {
+          props.push(ObjectPatProp::KeyValue(KeyValuePatProp {
+            key: PropName::Ident(quote_ident!(name.clone())),
+            value: Box::new(Pat::Ident(quote_ident!(format!("{}{}", name, refs + 1)))),
+          }))
+        } else {
+          props.push(ObjectPatProp::Assign(AssignPatProp {
             span: DUMMY_SP,
             key: quote_ident!(name),
             value: None,
-          })),
+          }))
         }
       }
       output.push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(VarDecl {
@@ -118,13 +119,18 @@ impl Fold for ASTransformer {
       }))));
     } else {
       let mut specifiers: Vec<ImportSpecifier> = vec![];
-      for (name, rename) in resolver.dep_helpers.clone() {
+      for (name, refs) in walker.scope_idents.helpers {
         specifiers.push(ImportSpecifier::Named(ImportNamedSpecifier {
           span: DUMMY_SP,
-          local: quote_ident!(name),
-          imported: match rename {
-            Some(rename) => Some(quote_ident!(rename)),
-            _ => None,
+          local: if refs > 0 {
+            quote_ident!(format!("{}{}", name.clone(), refs + 1))
+          } else {
+            quote_ident!(name.clone())
+          },
+          imported: if refs > 0 {
+            Some(quote_ident!(name))
+          } else {
+            None
           },
         }))
       }
@@ -179,6 +185,9 @@ impl Fold for ASTransformer {
         },
       )));
     }
+
+    // store dependency graph
+    resolver.dep_graph = walker.dep_graph;
 
     output
   }

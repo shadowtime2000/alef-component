@@ -25,8 +25,6 @@ pub struct Resolver {
   pub specifier: String,
   /// dom helper module
   pub dom_helper_module: String,
-  /// dependend helpers
-  pub dep_helpers: IndexMap<String, Option<String>>,
   /// dependency graph
   pub dep_graph: Vec<DependencyDescriptor>,
   /// inline styles
@@ -38,7 +36,6 @@ impl Resolver {
     Resolver {
       specifier: specifier.into(),
       dom_helper_module: dom_helper_module.into(),
-      dep_helpers: IndexMap::<String, Option<String>>::new(),
       dep_graph: Vec::new(),
       css: None,
     }
@@ -50,7 +47,6 @@ impl Default for Resolver {
     Resolver {
       specifier: "./App.alef".into(),
       dom_helper_module: "alef-dom".into(),
-      dep_helpers: IndexMap::<String, Option<String>>::new(),
       dep_graph: Vec::new(),
       css: None,
     }
