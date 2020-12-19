@@ -49,6 +49,7 @@ pub struct SideEffectStatement {
 pub enum TemplateStatement {
     Element(JSXElement),
     Fragment(JSXFragment),
+    If(IfStmt),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
