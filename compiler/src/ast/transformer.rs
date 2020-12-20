@@ -2,7 +2,7 @@
 
 use super::{identmap::IdentMap, statement::*, walker::ASTWalker};
 use crate::resolve::{format_component_name, Resolver};
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 use std::{cell::RefCell, path::Path, rc::Rc};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::*;
@@ -19,10 +19,14 @@ impl ASTransformer {
     &self,
     scope_idents: IdentMap,
     statements: Vec<Statement>,
-  ) -> (Vec<Stmt>, IndexMap<String, Option<String>>) {
-    let mut resolver = self.resolver.borrow_mut();
+  ) -> (Vec<ImportDecl>, IndexMap<String, Option<String>>, Vec<Stmt>) {
+    let resolver = self.resolver.borrow();
+    let mut import_declare: Vec<ImportDecl> = vec![];
+    let mut export_default: Option<Expr> = None;
     let mut stmts: Vec<Stmt> = vec![];
+    let mut nodes: Vec<Ident> = vec![];
     let mut dom_helpers: IndexMap<String, Option<String>> = IndexMap::new();
+    let mut updates: IndexMap<String, IndexSet<String>> = IndexMap::new();
 
     // insert 'super(props)'
     {
@@ -42,8 +46,21 @@ impl ASTransformer {
 
     for stmt in statements {
       match stmt {
+        Statement::Import(ImportStatement {
+          specifiers, src, ..
+        }) => import_declare.push(ImportDecl {
+          span: DUMMY_SP,
+          specifiers,
+          src: Str {
+            span: DUMMY_SP,
+            value: src.into(),
+            has_escape: false,
+          },
+          type_only: false,
+          asserts: None,
+        }),
         Statement::Var(VarStatement { name, init, .. }) => {
-          stmts.push(create_swc_stmt(name, init, false))
+          stmts.push(create_var_decl_stmt(name, init, false))
         }
         Statement::Const(ConstStatement {
           name,
@@ -52,7 +69,7 @@ impl ASTransformer {
           ctx_name,
         }) => match typed {
           ConstTyped::Regular => {
-            stmts.push(create_swc_stmt(name, Some(init), true));
+            stmts.push(create_var_decl_stmt(name, Some(init), true));
           }
           ConstTyped::Memo => {}
           ConstTyped::Prop => {}
@@ -70,12 +87,36 @@ impl ASTransformer {
           TemplateStatement::If(if_stmt) => {}
         },
         Statement::Style(StyleStatement { css }) => {}
-        Statement::Export(ExportStatement { expr }) => {}
+        Statement::Export(ExportStatement { expr }) => export_default = Some(expr),
         _ => {}
       }
     }
 
-    (stmts, dom_helpers)
+    // this.register(...nodes)
+    if nodes.len() > 0 {
+      stmts.push(Stmt::Expr(ExprStmt {
+        span: DUMMY_SP,
+        expr: Box::new(Expr::Member(MemberExpr {
+          span: DUMMY_SP,
+          obj: ExprOrSuper::Expr(Box::new(Expr::This(ThisExpr { span: DUMMY_SP }))),
+          prop: Box::new(Expr::Call(CallExpr {
+            span: DUMMY_SP,
+            callee: ExprOrSuper::Expr(Box::new(Expr::Ident(quote_ident!("register")))),
+            args: nodes
+              .into_iter()
+              .map(|node| ExprOrSpread {
+                spread: None,
+                expr: Box::new(Expr::Ident(node)),
+              })
+              .collect(),
+            type_args: None,
+          })),
+          computed: false,
+        })),
+      }))
+    }
+
+    (import_declare, dom_helpers, stmts)
   }
 }
 
@@ -85,7 +126,7 @@ impl Fold for ASTransformer {
   fn fold_module_items(&mut self, items: Vec<ModuleItem>) -> Vec<ModuleItem> {
     let mut walker = ASTWalker::new();
     let statements = walker.walk(items);
-    let (stmts, mut dom_helpers) =
+    let (import_declare, mut dom_helpers, stmts) =
       self.transform_statements(walker.scope_idents.clone(), statements);
     let mut resolver = self.resolver.borrow_mut();
     let mut output: Vec<ModuleItem> = vec![];
@@ -171,6 +212,10 @@ impl Fold for ASTransformer {
       })));
     }
 
+    for import in import_declare {
+      output.push(ModuleItem::ModuleDecl(ModuleDecl::Import(import)));
+    }
+
     // export component class
     {
       let path = Path::new(resolver.specifier.as_str());
@@ -217,7 +262,7 @@ impl Fold for ASTransformer {
   }
 }
 
-fn create_swc_stmt(name: Pat, init: Option<Expr>, is_const: bool) -> Stmt {
+fn create_var_decl_stmt(name: Pat, init: Option<Expr>, is_const: bool) -> Stmt {
   Stmt::Decl(Decl::Var(VarDecl {
     span: DUMMY_SP,
     kind: if is_const {
