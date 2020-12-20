@@ -28,6 +28,7 @@ impl ASTWalker {
         VarDeclKind::Const => {
           for decl in decls {
             let mut typed = ConstTyped::Regular;
+            let mut ctx_name: Option<String> = None;
             if let Pat::Ident(Ident { ref type_ann, .. })
             | Pat::Array(ArrayPat { ref type_ann, .. })
             | Pat::Object(ObjectPat { ref type_ann, .. }) = decl.name
@@ -57,7 +58,20 @@ impl ASTWalker {
                         }
                       }
                     }
-                    "Context" => typed = ConstTyped::Context,
+                    "Context" => {
+                      typed = ConstTyped::Context;
+                      if let Some(type_params) = type_params {
+                        if let Some(param) = type_params.params.first() {
+                          if let TsType::TsLitType(TsLitType {
+                            lit: TsLit::Str(Str { value, .. }),
+                            ..
+                          }) = param.as_ref()
+                          {
+                            ctx_name = Some(value.as_ref().into())
+                          }
+                        }
+                      }
+                    }
                     "Memo" => typed = ConstTyped::Memo,
                     "FC" => {
                       if let Some(init) = &decl.init {
@@ -148,7 +162,8 @@ impl ASTWalker {
             stmts.push(Statement::Const(ConstStatement {
               typed,
               name: decl.name.clone(),
-              init: decl.init.clone().unwrap(),
+              init: decl.init.clone().unwrap().as_ref().clone(),
+              ctx_name,
             }))
           }
         }
@@ -186,7 +201,11 @@ impl ASTWalker {
             }
             stmts.push(Statement::Var(VarStatement {
               name: decl.name.clone(),
-              init: decl.init.clone(),
+              init: if let Some(init) = &decl.init {
+                Some(init.as_ref().clone())
+              } else {
+                None
+              },
               is_array,
               is_ref,
               is_async,
@@ -197,7 +216,7 @@ impl ASTWalker {
       Stmt::Labeled(labeled) => match labeled.label.as_ref() {
         "$" => stmts.push(Statement::SideEffect(SideEffectStatement {
           name: None,
-          stmt: labeled.body.clone(),
+          stmt: labeled.body.as_ref().clone(),
         })),
         "$t" => match labeled.body.as_ref() {
           Stmt::Expr(ExprStmt { expr, .. }) => match expr.as_ref() {
@@ -214,7 +233,7 @@ impl ASTWalker {
         "$style" => match labeled.body.as_ref() {
           Stmt::Expr(ExprStmt { expr, .. }) => match expr.as_ref() {
             Expr::Tpl(tpl) => stmts.push(Statement::Style(StyleStatement {
-              css: Box::new(CSS::parse(tpl)),
+              css: CSS::parse(tpl),
             })),
             _ => stmts.push(Statement::Stmt(stmt.clone())),
           },
@@ -225,7 +244,7 @@ impl ASTWalker {
           if label.starts_with("$_") {
             stmts.push(Statement::SideEffect(SideEffectStatement {
               name: Some(label.trim_start_matches("$_").into()),
-              stmt: labeled.body.clone(),
+              stmt: labeled.body.as_ref().clone(),
             }));
           } else {
             stmts.push(Statement::Stmt(stmt.clone()));
@@ -277,7 +296,9 @@ impl ASTWalker {
             }))
           }
           ModuleDecl::ExportDefaultExpr(ExportDefaultExpr { expr, .. }) => {
-            stmts.push(Statement::Export(ExportStatement { expr }))
+            stmts.push(Statement::Export(ExportStatement {
+              expr: expr.as_ref().clone(),
+            }))
           }
           _ => {}
         },

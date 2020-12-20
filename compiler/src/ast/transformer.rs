@@ -45,7 +45,12 @@ impl ASTransformer {
         Statement::Var(VarStatement { name, init, .. }) => {
           stmts.push(create_swc_stmt(name, init, false))
         }
-        Statement::Const(ConstStatement { name, typed, init }) => match typed {
+        Statement::Const(ConstStatement {
+          name,
+          typed,
+          init,
+          ctx_name,
+        }) => match typed {
           ConstTyped::Regular => {
             stmts.push(create_swc_stmt(name, Some(init), true));
           }
@@ -62,7 +67,7 @@ impl ASTransformer {
         Statement::Template(t) => match t {
           TemplateStatement::Element(el) => {}
           TemplateStatement::Fragment(fragment) => {}
-          TemplateStatement::If(r#if) => {}
+          TemplateStatement::If(if_stmt) => {}
         },
         Statement::Style(StyleStatement { css }) => {}
         Statement::Export(ExportStatement { expr }) => {}
@@ -212,7 +217,7 @@ impl Fold for ASTransformer {
   }
 }
 
-fn create_swc_stmt(name: Pat, init: Option<Box<Expr>>, is_const: bool) -> Stmt {
+fn create_swc_stmt(name: Pat, init: Option<Expr>, is_const: bool) -> Stmt {
   Stmt::Decl(Decl::Var(VarDecl {
     span: DUMMY_SP,
     kind: if is_const {
@@ -224,7 +229,11 @@ fn create_swc_stmt(name: Pat, init: Option<Box<Expr>>, is_const: bool) -> Stmt {
     decls: vec![VarDeclarator {
       span: DUMMY_SP,
       name,
-      init,
+      init: if let Some(init) = init {
+        Some(Box::new(init))
+      } else {
+        None
+      },
       definite: false,
     }],
   }))

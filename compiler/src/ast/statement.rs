@@ -5,16 +5,16 @@ use swc_ecma_ast::*;
 pub struct ImportStatement {
     pub specifiers: Vec<ImportSpecifier>,
     pub src: String,
-    pub is_alef_component: bool, // match import App from "./App.alef"
+    pub is_alef_component: bool, // match import App from "./*.alef"
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VarStatement {
     pub name: Pat,
-    pub init: Option<Box<Expr>>,
+    pub init: Option<Expr>,
     pub is_ref: bool,   // match typed `Ref<T>`
     pub is_array: bool, // match typed `Array<T>`
-    pub is_async: bool, // match `let data = await fetch(...)`
+    pub is_async: bool, // match `let data = await ...`
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -23,14 +23,15 @@ pub enum ConstTyped {
     Memo,    // match typed `Memo<T>`
     Prop,    // match typed `Prop<T>`
     Slots,   // match typed `Prop<Slots>`
-    Context, // match typed `Context<T>`
+    Context, // match typed `Context<N, T=any>`
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ConstStatement {
     pub name: Pat,
     pub typed: ConstTyped,
-    pub init: Box<Expr>,
+    pub init: Expr,
+    pub ctx_name: Option<String>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -42,7 +43,7 @@ pub struct FCStatement {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SideEffectStatement {
     pub name: Option<String>, // a named side effect is like `$_{NAME}:`
-    pub stmt: Box<Stmt>,
+    pub stmt: Stmt,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -54,12 +55,12 @@ pub enum TemplateStatement {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct StyleStatement {
-    pub css: Box<CSS>,
+    pub css: CSS,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ExportStatement {
-    pub expr: Box<Expr>,
+    pub expr: Expr,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
