@@ -220,14 +220,73 @@ impl ASTWalker {
         })),
         "$t" => match labeled.body.as_ref() {
           Stmt::Expr(ExprStmt { expr, .. }) => match expr.as_ref() {
+            // match `$t: <p />`
             Expr::JSXElement(el) => stmts.push(Statement::Template(TemplateStatement::Element(
               el.as_ref().clone(),
             ))),
+            // match `$t: <><p /></>`
             Expr::JSXFragment(fragment) => stmts.push(Statement::Template(
               TemplateStatement::Fragment(fragment.clone()),
             )),
+            // match `$t: true ? <p /> : <p />`
+            Expr::Cond(CondExpr {
+              test, cons, alt, ..
+            }) => stmts.push(Statement::Template(TemplateStatement::If(IfStmt {
+              span: DUMMY_SP,
+              test: test.clone(),
+              cons: Box::new(Stmt::Expr(ExprStmt {
+                span: DUMMY_SP,
+                expr: cons.clone(),
+              })),
+              alt: Some(Box::new(Stmt::Expr(ExprStmt {
+                span: DUMMY_SP,
+                expr: alt.clone(),
+              }))),
+            }))),
+            Expr::Bin(BinExpr {
+              op, left, right, ..
+            }) => match op {
+              // match `$t: true && <p />` OR `$t: true && 1 && <p />`
+              BinaryOp::LogicalAnd => {
+                stmts.push(Statement::Template(TemplateStatement::If(IfStmt {
+                  span: DUMMY_SP,
+                  test: left.clone(),
+                  cons: Box::new(Stmt::Expr(ExprStmt {
+                    span: DUMMY_SP,
+                    expr: right.clone(),
+                  })),
+                  alt: None,
+                })))
+              }
+              // match `$t: false || <p />` OR `$t: false || 0 || <p />`
+              BinaryOp::LogicalOr => {
+                stmts.push(Statement::Template(TemplateStatement::If(IfStmt {
+                  span: DUMMY_SP,
+                  test: Box::new(Expr::Unary(UnaryExpr {
+                    span: DUMMY_SP,
+                    op: UnaryOp::Bang,
+                    arg: left.clone(),
+                  })),
+                  cons: Box::new(Stmt::Expr(ExprStmt {
+                    span: DUMMY_SP,
+                    expr: right.clone(),
+                  })),
+                  alt: None,
+                })))
+              }
+              _ => stmts.push(Statement::Stmt(stmt.clone())),
+            },
             _ => stmts.push(Statement::Stmt(stmt.clone())),
           },
+          // match `$t: if (...) <p /> else if (...) <p /> else <p />`
+          Stmt::If(IfStmt {
+            test, cons, alt, ..
+          }) => stmts.push(Statement::Template(TemplateStatement::If(IfStmt {
+            span: DUMMY_SP,
+            test: test.clone(),
+            cons: cons.clone(),
+            alt: alt.clone(),
+          }))),
           _ => stmts.push(Statement::Stmt(stmt.clone())),
         },
         "$style" => match labeled.body.as_ref() {
