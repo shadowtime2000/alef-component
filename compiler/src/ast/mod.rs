@@ -1,5 +1,6 @@
 mod css;
 mod identmap;
+mod jsx;
 mod statement;
 mod transformer;
 mod walker;

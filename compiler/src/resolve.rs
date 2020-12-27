@@ -1,6 +1,5 @@
 // Copyright 2020 the The Alef Component authors. All rights reserved. MIT license.
 
-use indexmap::IndexMap;
 use serde::Serialize;
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]

@@ -164,19 +164,15 @@ mod tests {
   #[test]
   fn test_component_export() {
     let source = r#"
-      let name: string = 'world'
+      let name: string = 'World'
 
-      $t: <p>hello {name}!</p>    
+      $t: <p>Hello {name}!</p>    
     "#;
     let (code, _) = t("App.alef", source);
     assert!(code.contains(" from \"alef-dom\";"));
     assert!(code.contains("export default class App extends Component"));
     assert!(code.contains("constructor(props)"));
     assert!(code.contains("super(props)"));
-    assert!(code.contains("let name = 'world'"));
-    assert!(code.contains("p = Element(\"p\")"));
-    assert!(code.contains("text = Text(\"hello \", p)"));
-    assert!(code.contains("text2 = Text(name, p)"));
-    assert!(code.contains("text3 = Text(\"!\", p)"));
+    assert!(code.contains("this.register(nodes)"));
   }
 }
