@@ -1,9 +1,7 @@
 import {
-  banchUpdate,
   Component,
   Element,
   Memo,
-  Space,
   Text
 } from '../../lib/helper.js'
 
@@ -14,37 +12,28 @@ export default class App extends Component {
     // strip types 
     let numbers /* Array */ = [1]
     function addNumber() {
-      numbers.push((numbers[numbers.length - 2] || 0) + numbers[numbers.length - 1]) // dirty data: numbers 
+      numbers.push((numbers[numbers.length - 2] || 0) + numbers[numbers.length - 1])
     }
 
     // create memos
-    const $sum = Memo(() => numbers.reduce((t, n) => t + n, 0))  // dep: numbers
-    const $1 /* {numbers.join(' + ')} */ = Memo(() => numbers.join(' + ')) // dep: numbers
+    const $sum = Memo(() => numbers.reduce((t, n) => t + n, 0), [0])
 
     // create nodes
-    const p = Element('p')
-    /**/ const text = Text('0 + ', p)
-    /**/ const text2 = Text($1.value, p)
-    /**/ const text3 = Text(' = ', p)
-    /**/ const text4 = Text($sum.value, p)
-    const s = Space()
-    const button = Element('button')
-    /**/ const text5 = Text('Add a number', button)
-
-    // create updates
-    const numbers_up = () =>  {
-      banchUpdate(
-        $1,
-        $sum,
-        [text2, () => $1.value],
-        [text4, () => $sum.value]
-      )
-    }
-
-    // listen events
-    button.listen('click', addNumber, numbers_up)
+    const nodes = [
+      Element(
+        'p',
+        null,
+        '0 + ',
+        Text(Memo(() => numbers.join(' + '), [0])),
+        ' = ',
+        Text($sum)
+      ),
+      Element('button', {
+        onClick: Dirty(addNumber, [0])
+      }, 'Add a number')
+    ]
 
     // register nodes
-    this.register(p, s, button)
+    this.register(nodes)
   }
 }

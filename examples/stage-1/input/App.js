@@ -1,8 +1,8 @@
 import {
-  banchUpdate,
   Component,
+  Dirty,
   Element,
-  Space,
+  Memo,
   Text
 } from '../../lib/helper.js'
 
@@ -13,34 +13,38 @@ export default class App extends Component {
     // strip types 
     let name = 'World'
     function onChange(e) {
-      name = e.target.value // dirty data: name
+      name = e.target.value
     }
-    function reset(e) {
-      name = 'World' // dirty data: name
+    function reset() {
+      name = 'World'
     }
 
     // create nodes
-    const p = Element('p')
-    /**/ const text = Text('Hello ', p)
-    /**/ const text2 = Text(name, p)
-    /**/ const text3 = Text('!', p)
-    const s = Space()
-    const input = Element('input', { value: name })
-    const s2 = Space()
-    const button = Element('button')
-    /**/ const text4 = Text('Reset', button)
-
-    // create updates
-    const name_up = () => banchUpdate(
-      [text2, name],
-      [input, 'value', name],
-    )
-
-    // listen events
-    input.listen('input', onChange, name_up)
-    button.listen('click', reset, name_up)
+    const nodes = [
+      Element(
+        'p',
+        null,
+        'Hello ',
+        Text(Memo(() => name, [0])),
+        '!'
+      ),
+      Element(
+        'input',
+        {
+          value: Memo(() => name, [0]),
+          onInput: Dirty(onChange, [0])
+        }
+      ),
+      Element(
+        'button',
+        {
+          onClick: Dirty(reset, [0])
+        },
+        'Reset'
+      )
+    ]
 
     // register nodes
-    this.register(p, s, input, s2, button)
+    this.register(nodes)
   }
 }

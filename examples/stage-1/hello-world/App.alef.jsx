@@ -1,3 +1,3 @@
-let name = 'world'
+let name = 'World'
 
-$t: <p>hello {name}!</p>
+$t: <p>Hello {name}!</p>

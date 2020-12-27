@@ -1,7 +1,6 @@
 import {
   Component,
-  Element,
-  Text
+  Element
 } from '../../lib/helper.js'
 
 export default class App extends Component {
@@ -9,15 +8,18 @@ export default class App extends Component {
     super()
 
     // strip types 
-    let name = 'world'
+    let name = 'World'
 
     // create nodes
-    const p = Element('p')
-    /**/ const text = Text('Hello ', p)
-    /**/ const text2 = Text(name, p)
-    /**/ const text3 = Text('!', p)
+    const nodes = [
+      Element(
+        'p',
+        null,
+        `Hello ${name}!`,
+      )
+    ]
 
     // register nodes
-    this.register(p)
+    this.register(nodes)
   }
 }
