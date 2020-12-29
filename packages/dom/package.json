@@ -1,0 +1,25 @@
+{
+  "name": "alef-dom",
+  "version": "0.0.0",
+  "description": "Alef Component DOM Helper.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alephjs/alef-component.git"
+  },
+  "keywords": [
+    "alephjs",
+    "alef",
+    "components",
+    "dom",
+    "helper"
+  ],
+  "author": "Alef Component authors",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/alephjs/alef-component/issues"
+  }
+}

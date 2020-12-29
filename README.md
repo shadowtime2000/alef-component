@@ -1,4 +1,4 @@
-![Alef Component](./assets/banner.svg)
+![Alef Component](./design/banner.svg)
 
 # Alef Component
 
