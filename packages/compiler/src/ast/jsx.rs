@@ -11,9 +11,7 @@ use swc_ecma_utils::{quote_ident, ExprFactory, HANDLER};
 use swc_ecma_visit::{noop_fold_type, Fold};
 
 impl StatementsTransformer {
-    pub fn transform2(&self) {
-        
-    }
+    pub fn transform2(&self) {}
 }
 
 fn jsx_name(name: JSXElementName) -> Box<Expr> {
@@ -26,6 +24,7 @@ fn jsx_name(name: JSXElementName) -> Box<Expr> {
                     span: DUMMY_SP,
                     value: i.sym,
                     has_escape: false,
+                    kind: Default::default(),
                 })))
             } else {
                 Box::new(Expr::Ident(i))
@@ -108,6 +107,9 @@ fn to_prop_name(n: JSXAttrName) -> PropName {
                     span: DUMMY_SP,
                     value: i.sym,
                     has_escape: false,
+                    kind: StrKind::Normal {
+                        contains_quote: false,
+                    },
                 })
             } else {
                 PropName::Ident(i)
@@ -117,6 +119,7 @@ fn to_prop_name(n: JSXAttrName) -> PropName {
             span: DUMMY_SP,
             value: format!("{}:{}", ns.sym, name.sym).into(),
             has_escape: false,
+            kind: Default::default(),
         }),
     }
 }
