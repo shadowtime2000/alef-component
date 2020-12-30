@@ -1,9 +1,8 @@
 // Copyright 2020 the The Alef Component authors. All rights reserved. MIT license.
 
-use super::{identmap::IdentMap, statement::*, walker::ASTWalker};
+use super::{identmap::IdentMap, jsx::JSXTransformer, statement::*, walker::ASTWalker};
 use crate::resolve::{format_component_name, Resolver};
-use indexmap::IndexMap;
-use std::{cell::RefCell, path::Path, rc::Rc};
+use std::{borrow, cell::RefCell, path::Path, rc::Rc};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::*;
 use swc_ecma_utils::quote_ident;
@@ -20,35 +19,33 @@ impl Fold for ASTransformer {
   fn fold_module_items(&mut self, items: Vec<ModuleItem>) -> Vec<ModuleItem> {
     let mut walker = ASTWalker::new();
     let statements = walker.walk(items);
-    let stmt_tfr = StatementsTransformer {
+    let helper_component_id = walker.scope_idents.create_ident("Component");
+    let scope_idents = Rc::new(RefCell::new(walker.scope_idents));
+    let transformer = StatementsTransformer {
       resolver: self.resolver.clone(),
-      scope_idents: walker.scope_idents.clone(),
+      scope_idents: scope_idents.clone(),
     };
-    let (import_declare, mut dom_helpers, stmts) = stmt_tfr.transform(statements);
+    let (import_declare, stmts) = transformer.transform(statements);
     let mut resolver = self.resolver.borrow_mut();
     let mut output: Vec<ModuleItem> = vec![];
-
-    let helper_component_id = walker.scope_idents.create_ident("Component");
-    dom_helpers.insert("Component".into(), Some(helper_component_id.clone()));
+    let scope_idents = scope_idents.borrow();
 
     // import dom helper module
     if resolver.dom_helper_module.starts_with("window.") {
       let mut props: Vec<ObjectPatProp> = vec![];
-      for (name, rename) in dom_helpers {
-        if let Some(rename) = rename {
-          if rename != name {
-            props.push(ObjectPatProp::KeyValue(KeyValuePatProp {
-              key: PropName::Ident(quote_ident!(name.clone())),
-              value: Box::new(Pat::Ident(quote_ident!(rename))),
-            }));
-            continue;
-          }
+      for (name, rename) in scope_idents.helpers.clone() {
+        if rename != name {
+          props.push(ObjectPatProp::KeyValue(KeyValuePatProp {
+            key: PropName::Ident(quote_ident!(name.clone())),
+            value: Box::new(Pat::Ident(quote_ident!(rename))),
+          }));
+        } else {
+          props.push(ObjectPatProp::Assign(AssignPatProp {
+            span: DUMMY_SP,
+            key: quote_ident!(name),
+            value: None,
+          }));
         }
-        props.push(ObjectPatProp::Assign(AssignPatProp {
-          span: DUMMY_SP,
-          key: quote_ident!(name),
-          value: None,
-        }));
       }
       output.push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(VarDecl {
         span: DUMMY_SP,
@@ -71,28 +68,18 @@ impl Fold for ASTransformer {
       }))));
     } else {
       let mut specifiers: Vec<ImportSpecifier> = vec![];
-      for (name, rename) in dom_helpers {
+      for (name, rename) in scope_idents.helpers.clone() {
         specifiers.push(ImportSpecifier::Named(ImportNamedSpecifier {
           span: DUMMY_SP,
-          local: match rename.clone() {
-            Some(rename) => {
-              if rename != name {
-                quote_ident!(rename)
-              } else {
-                quote_ident!(name.clone())
-              }
-            }
-            _ => quote_ident!(name.clone()),
+          local: if rename != name {
+            quote_ident!(rename.clone())
+          } else {
+            quote_ident!(name.clone())
           },
-          imported: match rename {
-            Some(rename) => {
-              if rename != name {
-                Some(quote_ident!(name))
-              } else {
-                None
-              }
-            }
-            _ => None,
+          imported: if rename != name {
+            Some(quote_ident!(name))
+          } else {
+            None
           },
         }))
       }
@@ -143,7 +130,7 @@ impl Fold for ASTransformer {
                 accessibility: None,
                 is_optional: false,
               })],
-              super_class: Some(Box::new(Expr::Ident(quote_ident!(helper_component_id)))),
+              super_class: Some(Box::new(Expr::Ident(helper_component_id))),
               is_abstract: false,
               type_params: None,
               super_type_params: None,
@@ -163,22 +150,20 @@ impl Fold for ASTransformer {
 
 pub struct StatementsTransformer {
   pub resolver: Rc<RefCell<Resolver>>,
-  pub scope_idents: IdentMap,
+  pub scope_idents: Rc<RefCell<IdentMap>>,
 }
 
 impl StatementsTransformer {
-  pub fn transform(
-    &self,
-    statements: Vec<Statement>,
-  ) -> (Vec<ImportDecl>, IndexMap<String, Option<String>>, Vec<Stmt>) {
+  pub fn transform(&self, statements: Vec<Statement>) -> (Vec<ImportDecl>, Vec<Stmt>) {
+    let jsx_transformer = JSXTransformer {
+      resolver: self.resolver.clone(),
+      scope_idents: self.scope_idents.clone(),
+    };
     let resolver = self.resolver.borrow();
     let mut import_declare: Vec<ImportDecl> = vec![];
     let mut export_default: Option<Expr> = None;
     let mut stmts: Vec<Stmt> = vec![];
     let mut nodes: Vec<Ident> = vec![];
-    let mut dom_helpers: IndexMap<String, Option<String>> = IndexMap::new();
-
-    self.transform2();
 
     // insert 'super(props)'
     {
@@ -235,9 +220,21 @@ impl StatementsTransformer {
         }) => {}
         Statement::SideEffect(SideEffectStatement { name, stmt }) => {}
         Statement::Template(t) => match t {
-          TemplateStatement::Element(el) => {}
-          TemplateStatement::Fragment(fragment) => {}
-          TemplateStatement::If(if_stmt) => {}
+          TemplateStatement::Element(el) => {
+            stmts.push(Stmt::Expr(ExprStmt {
+              span: DUMMY_SP,
+              expr: Box::new(jsx_transformer.transform_element(el)),
+            }));
+          }
+          TemplateStatement::Fragment(frag) => {
+            stmts.push(Stmt::Expr(ExprStmt {
+              span: DUMMY_SP,
+              expr: Box::new(jsx_transformer.transform_fragment(frag)),
+            }));
+          }
+          TemplateStatement::If(if_stmt) => {
+            stmts.push(jsx_transformer.transform_condition(if_stmt));
+          }
         },
         Statement::Style(StyleStatement { css }) => {}
         Statement::Export(ExportStatement { expr }) => export_default = Some(expr),
@@ -269,7 +266,7 @@ impl StatementsTransformer {
       }))
     }
 
-    (import_declare, dom_helpers, stmts)
+    (import_declare, stmts)
   }
 }
 

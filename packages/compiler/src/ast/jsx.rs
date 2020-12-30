@@ -1,17 +1,169 @@
 // Copyright 2020 the The Alef Component authors. All rights reserved. MIT license.
 
-use super::{statement::*, transformer::StatementsTransformer};
+use super::{identmap::IdentMap, statement::*, transformer::StatementsTransformer};
 use crate::resolve::{format_component_name, Resolver};
 use indexmap::{IndexMap, IndexSet};
 use regex::Regex;
-use std::{cell::RefCell, path::Path, rc::Rc};
+use std::{cell::RefCell, iter, mem, path::Path, rc::Rc};
 use swc_common::{iter::IdentifyLast, DUMMY_SP};
 use swc_ecma_ast::*;
-use swc_ecma_utils::{quote_ident, ExprFactory, HANDLER};
+use swc_ecma_utils::{drop_span, member_expr, quote_ident, ExprFactory, HANDLER};
 use swc_ecma_visit::{noop_fold_type, Fold};
 
-impl StatementsTransformer {
-    pub fn transform2(&self) {}
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct JSXTransformer {
+    pub resolver: Rc<RefCell<Resolver>>,
+    pub scope_idents: Rc<RefCell<IdentMap>>,
+}
+
+impl JSXTransformer {
+    pub fn transform_element(&self, el: JSXElement) -> Expr {
+        Expr::Call(CallExpr {
+            span: DUMMY_SP,
+            callee: ExprOrSuper::Expr(Box::new(Expr::Ident(quote_ident!("Element")))),
+            args: iter::once(jsx_name(el.opening.name).as_arg())
+                .chain(iter::once(self.attrs_to_expr(el.opening.attrs).as_arg()))
+                .chain({
+                    el.children
+                        .into_iter()
+                        .filter_map(|c| self.jsx_child_to_expr(c))
+                })
+                .collect(),
+            type_args: Default::default(),
+        })
+    }
+
+    pub fn transform_fragment(&self, frag: JSXFragment) -> Expr {
+        Expr::Call(CallExpr {
+            span: DUMMY_SP,
+            callee: ExprOrSuper::Expr(Box::new(Expr::Ident(quote_ident!("Element")))),
+            args: frag
+                .children
+                .into_iter()
+                .filter_map(|c| self.jsx_child_to_expr(c))
+                .collect(),
+            type_args: Default::default(),
+        })
+    }
+
+    pub fn transform_condition(&self, if_stmt: IfStmt) -> Stmt {
+        Stmt::Empty(EmptyStmt { span: DUMMY_SP })
+    }
+
+    fn jsx_child_to_expr(&self, c: JSXElementChild) -> Option<ExprOrSpread> {
+        Some(match c {
+            JSXElementChild::JSXText(text) => {
+                let s = Str {
+                    span: text.span,
+                    has_escape: text.raw != text.value,
+                    value: jsx_text_to_string(text.value.as_ref()).into(),
+                    kind: Default::default(),
+                };
+                if s.value.is_empty() {
+                    return None;
+                }
+
+                Lit::Str(s).as_arg()
+            }
+            JSXElementChild::JSXExprContainer(JSXExprContainer {
+                expr: JSXExpr::Expr(e),
+                ..
+            }) => e.as_arg(),
+            JSXElementChild::JSXExprContainer(JSXExprContainer {
+                expr: JSXExpr::JSXEmptyExpr(..),
+                ..
+            }) => return None,
+            JSXElementChild::JSXElement(el) => self.transform_element(*el).as_arg(),
+            JSXElementChild::JSXFragment(el) => self.transform_fragment(el).as_arg(),
+            JSXElementChild::JSXSpreadChild(JSXSpreadChild { .. }) => {
+                unimplemented!("jsx sperad child")
+            }
+        })
+    }
+
+    fn attrs_to_expr(&self, attrs: Vec<JSXAttrOrSpread>) -> Box<Expr> {
+        if attrs.is_empty() {
+            return Box::new(Expr::Lit(Lit::Null(Null { span: DUMMY_SP })));
+        }
+        let is_complex = attrs.iter().any(|a| match *a {
+            JSXAttrOrSpread::SpreadElement(..) => true,
+            _ => false,
+        });
+        if is_complex {
+            let mut args = vec![];
+            let mut cur_obj_props = vec![];
+            macro_rules! check {
+                () => {{
+                    if args.is_empty() || !cur_obj_props.is_empty() {
+                        args.push(
+                            ObjectLit {
+                                span: DUMMY_SP,
+                                props: mem::replace(&mut cur_obj_props, vec![]),
+                            }
+                            .as_arg(),
+                        )
+                    }
+                }};
+            }
+            for attr in attrs {
+                match attr {
+                    JSXAttrOrSpread::JSXAttr(a) => {
+                        cur_obj_props.push(PropOrSpread::Prop(Box::new(attr_to_prop(a))))
+                    }
+                    JSXAttrOrSpread::SpreadElement(e) => {
+                        check!();
+                        args.push(e.expr.as_arg());
+                    }
+                }
+            }
+            check!();
+            Box::new(Expr::Call(CallExpr {
+                span: DUMMY_SP,
+                callee: { member_expr!(DUMMY_SP, Object.assign).as_callee() },
+                args,
+                type_args: None,
+            }))
+        } else {
+            Box::new(Expr::Object(ObjectLit {
+                span: DUMMY_SP,
+                props: attrs
+                    .into_iter()
+                    .map(|a| match a {
+                        JSXAttrOrSpread::JSXAttr(a) => a,
+                        _ => unreachable!(),
+                    })
+                    .map(attr_to_prop)
+                    .map(|v| match v {
+                        Prop::KeyValue(KeyValueProp { key, value }) => {
+                            Prop::KeyValue(KeyValueProp {
+                                key,
+                                value: Box::new(self.transform_prop_value(*value)),
+                            })
+                        }
+                        _ => v,
+                    })
+                    .map(Box::new)
+                    .map(PropOrSpread::Prop)
+                    .collect(),
+            }))
+        }
+    }
+
+    fn transform_prop_value(&self, expr: Expr) -> Expr {
+        match expr {
+            Expr::JSXElement(el) => self.transform_element(*el),
+            Expr::JSXFragment(frag) => self.transform_fragment(frag),
+            Expr::Paren(ParenExpr {
+                span,
+                expr: inner_expr,
+                ..
+            }) => Expr::Paren(ParenExpr {
+                span,
+                expr: Box::new(self.transform_prop_value(*inner_expr)),
+            }),
+            _ => expr,
+        }
+    }
 }
 
 fn jsx_name(name: JSXElementName) -> Box<Expr> {

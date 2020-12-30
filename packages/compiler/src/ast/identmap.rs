@@ -3,29 +3,13 @@
 use indexmap::{IndexMap, IndexSet};
 use std::default::Default;
 use swc_ecma_ast::*;
-
-const HELPER_IDENTS: [&'static str; 14] = [
-    "Component",
-    "New",
-    "Element",
-    "Fragment",
-    "If",
-    "IfElse",
-    "List",
-    "Text",
-    "Space",
-    "Style",
-    "Memo",
-    "Effect",
-    "banchUpdate",
-    "nope",
-];
+use swc_ecma_utils::quote_ident;
 
 pub type IdentSet = IndexSet<String>;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct IdentMap {
-    pub helper_refs: IndexMap<String, u16>,
+    pub helpers: IndexMap<String, String>,
     pub scopes: IdentSet,
     pub states: IdentSet,
     pub array_states: IdentSet,
@@ -41,13 +25,7 @@ impl IdentMap {
         for ident in get_idents_from_pat(&pat) {
             let id = ident.sym.as_ref().to_string();
             match name {
-                "scope" => {
-                    if self.helper_refs.contains_key(&id) {
-                        self.helper_refs
-                            .insert(id.clone(), self.helper_refs.get(&id).unwrap() + 1);
-                    }
-                    self.scopes.insert(id)
-                }
+                "scope" => self.scopes.insert(id),
                 "state" => self.states.insert(id),
                 "array_state" => self.array_states.insert(id),
                 "async_state" => self.async_states.insert(id),
@@ -90,18 +68,12 @@ impl IdentMap {
         self.mark_as_state(pat);
         self.mark_as("context", pat);
     }
-    pub fn tokenize_helper(&mut self, id: String, refs: u16) {
-        self.helper_refs
-            .insert(id.clone(), self.helper_refs.get(&id).unwrap() + refs);
-    }
-    pub fn create_ident(&mut self, name: &str) -> String {
-        if self.helper_refs.contains_key(name) {
-            let refs = self.helper_refs.get(name).unwrap();
-            if *refs > 0 {
-                return format!("{}{}", name, refs + 1);
-            }
-            return name.into();
-        }
+    pub fn create_ident(&mut self, name: &str) -> Ident {
+        let is_helper = match name {
+            "Component" | "Element" | "Fragment" | "If" | "List" | "Text" | "Style" | "Memo"
+            | "Effect" | "Dirty" | "nope" => true,
+            _ => false,
+        };
         let mut idx = 0;
         if self.scopes.contains(name) {
             idx = 1;
@@ -114,21 +86,24 @@ impl IdentMap {
             }
         }
         if idx > 0 {
-            format!("{}{}", name, idx + 1)
+            let fixed_name = format!("{}{}", name, idx + 1);
+            self.scopes.insert(fixed_name.clone());
+            if is_helper {
+                self.helpers.insert(name.into(), fixed_name.clone());
+            }
+            quote_ident!(fixed_name)
         } else {
-            name.into()
+            self.scopes.insert(name.into());
+            self.helpers.insert(name.into(), name.into());
+            quote_ident!(name)
         }
     }
 }
 
 impl Default for IdentMap {
     fn default() -> Self {
-        let mut helper_refs = IndexMap::<String, u16>::new();
-        for indent in HELPER_IDENTS.iter() {
-            helper_refs.insert(indent.to_string(), 0);
-        }
         IdentMap {
-            helper_refs,
+            helpers: IndexMap::new(),
             scopes: IdentSet::new(),
             states: IdentSet::new(),
             array_states: IdentSet::new(),

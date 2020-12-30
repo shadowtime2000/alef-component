@@ -83,9 +83,6 @@ impl ASTWalker {
                               for stmt in &block_stmt.stmts {
                                 fc_stmts = [fc_stmts, fc_walker.transform_stmt(stmt)].concat()
                               }
-                              for (id, refs) in fc_walker.scope_idents.helper_refs.clone() {
-                                self.scope_idents.tokenize_helper(id, refs)
-                              }
                               for dep in fc_walker.dep_graph {
                                 self.dep_graph.push(dep)
                               }
@@ -102,9 +99,6 @@ impl ASTWalker {
                                 span: DUMMY_SP,
                                 expr: expr.clone(),
                               }));
-                              for (id, refs) in fc_walker.scope_idents.helper_refs.clone() {
-                                self.scope_idents.tokenize_helper(id, refs)
-                              }
                               for dep in fc_walker.dep_graph {
                                 self.dep_graph.push(dep)
                               }
@@ -129,9 +123,6 @@ impl ASTWalker {
                             let mut fc_stmts: Vec<Statement> = vec![];
                             for stmt in &body.stmts {
                               fc_stmts = [fc_stmts, fc_walker.transform_stmt(stmt)].concat()
-                            }
-                            for (id, refs) in fc_walker.scope_idents.helper_refs.clone() {
-                              self.scope_idents.tokenize_helper(id, refs)
                             }
                             for dep in fc_walker.dep_graph {
                               self.dep_graph.push(dep)
