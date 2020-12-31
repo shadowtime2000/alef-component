@@ -1,5 +1,5 @@
 // Copyright 2018-2020 the Deno authors. All rights reserved. MIT license.
-// Copyright 2020 the The Alef Component authors. All rights reserved. MIT license.
+// Copyright 2020 the Aleph.js authors. All rights reserved. MIT license.
 
 use std::{error::Error, fmt, sync::Arc, sync::RwLock};
 use swc_common::{

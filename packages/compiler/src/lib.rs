@@ -1,9 +1,10 @@
-// Copyright 2020 the The Alef Component authors. All rights reserved. MIT license.
+// Copyright 2020 the Aleph.js authors. All rights reserved. MIT license.
 
-mod ast;
+pub mod ast;
+pub mod module;
+pub mod resolve;
+
 mod error;
-mod module;
-mod resolve;
 
 use module::AlefComponentModule;
 use resolve::{CSSTemplate, DependencyDescriptor, Resolver};

@@ -1,3 +1,5 @@
+// Copyright 2020 the Aleph.js authors. All rights reserved. MIT license.
+
 use super::{css::CSS, identmap::IdentMap};
 use swc_ecma_ast::*;
 

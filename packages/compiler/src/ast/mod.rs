@@ -1,3 +1,5 @@
+// Copyright 2020 the Aleph.js authors. All rights reserved. MIT license.
+
 mod css;
 mod identmap;
 mod jsx;
