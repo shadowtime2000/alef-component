@@ -1,8 +1,8 @@
 // Copyright 2020 the The Alef Component authors. All rights reserved. MIT license.
 
 use super::{identmap::IdentMap, jsx::JSXTransformer, statement::*, walker::ASTWalker};
-use crate::resolve::{format_component_name, Resolver};
-use std::{borrow, cell::RefCell, path::Path, rc::Rc};
+use crate::resolve::{to_component_name, Resolver};
+use std::{cell::RefCell, path::Path, rc::Rc};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::*;
 use swc_ecma_utils::quote_ident;
@@ -27,8 +27,8 @@ impl Fold for ASTransformer {
     };
     let (import_declare, stmts) = transformer.transform(statements);
     let mut resolver = self.resolver.borrow_mut();
-    let mut output: Vec<ModuleItem> = vec![];
     let scope_idents = scope_idents.borrow();
+    let mut output: Vec<ModuleItem> = vec![];
 
     // import dom helper module
     if resolver.dom_helper_module.starts_with("window.") {
@@ -106,7 +106,7 @@ impl Fold for ASTransformer {
     {
       let path = Path::new(resolver.specifier.as_str());
       let file_name = path.file_name().as_ref().unwrap().to_str().unwrap();
-      let name = format_component_name(file_name);
+      let name = to_component_name(file_name);
       output.push(ModuleItem::ModuleDecl(ModuleDecl::ExportDefaultExpr(
         ExportDefaultExpr {
           span: DUMMY_SP,
@@ -159,11 +159,10 @@ impl StatementsTransformer {
       resolver: self.resolver.clone(),
       scope_idents: self.scope_idents.clone(),
     };
-    let resolver = self.resolver.borrow();
     let mut import_declare: Vec<ImportDecl> = vec![];
     let mut export_default: Option<Expr> = None;
     let mut stmts: Vec<Stmt> = vec![];
-    let mut nodes: Vec<Ident> = vec![];
+    let mut nodes: Vec<Expr> = vec![];
 
     // insert 'super(props)'
     {
@@ -221,16 +220,10 @@ impl StatementsTransformer {
         Statement::SideEffect(SideEffectStatement { name, stmt }) => {}
         Statement::Template(t) => match t {
           TemplateStatement::Element(el) => {
-            stmts.push(Stmt::Expr(ExprStmt {
-              span: DUMMY_SP,
-              expr: Box::new(jsx_transformer.transform_element(el)),
-            }));
+            nodes.push(jsx_transformer.transform_element(el));
           }
           TemplateStatement::Fragment(frag) => {
-            stmts.push(Stmt::Expr(ExprStmt {
-              span: DUMMY_SP,
-              expr: Box::new(jsx_transformer.transform_fragment(frag)),
-            }));
+            nodes.push(jsx_transformer.transform_fragment(frag));
           }
           TemplateStatement::If(if_stmt) => {
             stmts.push(jsx_transformer.transform_condition(if_stmt));
@@ -242,8 +235,33 @@ impl StatementsTransformer {
       }
     }
 
-    // this.register(...nodes)
+    // const nodes = []
+    // this.register(nodes)
     if nodes.len() > 0 {
+      let mut scope_idents = RefCell::borrow_mut(&self.scope_idents);
+      let nodes_ident = scope_idents.create_ident("nodes");
+      stmts.push(Stmt::Decl(Decl::Var(VarDecl {
+        span: DUMMY_SP,
+        kind: VarDeclKind::Const,
+        declare: false,
+        decls: vec![VarDeclarator {
+          span: DUMMY_SP,
+          name: Pat::Ident(nodes_ident.clone()),
+          init: Some(Box::new(Expr::Array(ArrayLit {
+            span: DUMMY_SP,
+            elems: nodes
+              .into_iter()
+              .map(|node| {
+                Some(ExprOrSpread {
+                  spread: None,
+                  expr: Box::new(node),
+                })
+              })
+              .collect(),
+          }))),
+          definite: false,
+        }],
+      })));
       stmts.push(Stmt::Expr(ExprStmt {
         span: DUMMY_SP,
         expr: Box::new(Expr::Member(MemberExpr {
@@ -252,13 +270,10 @@ impl StatementsTransformer {
           prop: Box::new(Expr::Call(CallExpr {
             span: DUMMY_SP,
             callee: ExprOrSuper::Expr(Box::new(Expr::Ident(quote_ident!("register")))),
-            args: nodes
-              .into_iter()
-              .map(|node| ExprOrSpread {
-                spread: None,
-                expr: Box::new(Expr::Ident(node)),
-              })
-              .collect(),
+            args: vec![ExprOrSpread {
+              spread: None,
+              expr: Box::new(Expr::Ident(nodes_ident.clone())),
+            }],
             type_args: None,
           })),
           computed: false,

@@ -94,7 +94,9 @@ impl IdentMap {
             quote_ident!(fixed_name)
         } else {
             self.scopes.insert(name.into());
-            self.helpers.insert(name.into(), name.into());
+            if is_helper {
+                self.helpers.insert(name.into(), name.into());
+            }
             quote_ident!(name)
         }
     }

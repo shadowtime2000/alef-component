@@ -52,7 +52,7 @@ impl Default for Resolver {
   }
 }
 
-pub fn format_component_name(s: &str) -> String {
+pub fn to_component_name(s: &str) -> String {
   let mut should_uppercase = true;
   let mut char_vec: Vec<char> = vec![];
   for c in s.trim_end_matches(".alef").chars() {
@@ -84,16 +84,16 @@ mod tests {
   use super::*;
 
   #[test]
-  fn test_format_component_name() {
-    assert_eq!(format_component_name("app.alef"), "App");
-    assert_eq!(format_component_name("hello-world.alef"), "HelloWorld");
-    assert_eq!(format_component_name("hello_world.alef"), "HelloWorld");
-    assert_eq!(format_component_name("hello.world.alef"), "HelloWorld");
-    assert_eq!(format_component_name("hello world.alef"), "HelloWorld");
-    assert_eq!(format_component_name("HELLO world.alef"), "HELLOWorld");
-    assert_eq!(format_component_name("h798.alef"), "H798");
-    assert_eq!(format_component_name("798hello world.alef"), "HelloWorld");
-    assert_eq!(format_component_name("798.alef"), "App");
-    assert_eq!(format_component_name("Hello 世界!.alef"), "Hello");
+  fn test_to_component_name() {
+    assert_eq!(to_component_name("app.alef"), "App");
+    assert_eq!(to_component_name("hello-world.alef"), "HelloWorld");
+    assert_eq!(to_component_name("hello_world.alef"), "HelloWorld");
+    assert_eq!(to_component_name("hello.world.alef"), "HelloWorld");
+    assert_eq!(to_component_name("hello world.alef"), "HelloWorld");
+    assert_eq!(to_component_name("HELLO world.alef"), "HELLOWorld");
+    assert_eq!(to_component_name("h798.alef"), "H798");
+    assert_eq!(to_component_name("798hello world.alef"), "HelloWorld");
+    assert_eq!(to_component_name("798.alef"), "App");
+    assert_eq!(to_component_name("Hello 世界!.alef"), "Hello");
   }
 }

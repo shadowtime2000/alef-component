@@ -169,10 +169,11 @@ mod tests {
       $t: <p>Hello {name}!</p>    
     "#;
     let (code, _) = t("App.alef", source);
-    assert!(code.contains(" from \"alef-dom\";"));
+    assert!(code.contains("import { Component, Element, Memo } from \"alef-dom\";"));
     assert!(code.contains("export default class App extends Component"));
     assert!(code.contains("constructor(props)"));
     assert!(code.contains("super(props)"));
+    assert!(code.contains("const nodes = ["));
     assert!(code.contains("this.register(nodes)"));
   }
 }
