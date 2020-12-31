@@ -1,5 +1,5 @@
 {
-  "name": "alef_compiler",
+  "name": "alef-compiler",
   "version": "0.0.0",
   "description": "Alef Component AOT Compiler.",
   "main": "index.js",
@@ -21,7 +21,7 @@
     "rust",
     "swc"
   ],
-  "author": "Aleph.js authors",
+  "author": "The Aleph.js authors",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/alephjs/alef-component/issues"

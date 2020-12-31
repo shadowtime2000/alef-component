@@ -1,6 +1,9 @@
 // Copyright 2020 the Aleph.js authors. All rights reserved. MIT license.
 
 use serde::Serialize;
+use swc_ecmascript::parser::JscTarget;
+
+pub type Target = JscTarget;
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -23,7 +26,7 @@ pub struct Resolver {
   /// current component specifier
   pub specifier: String,
   /// dom helper module
-  pub dom_helper_module: String,
+  pub runtime_module: String,
   /// dependency graph
   pub dep_graph: Vec<DependencyDescriptor>,
   /// inline styles
@@ -31,10 +34,10 @@ pub struct Resolver {
 }
 
 impl Resolver {
-  pub fn new(specifier: &str, dom_helper_module: &str) -> Self {
+  pub fn new(specifier: &str, runtime_module: &str) -> Self {
     Resolver {
       specifier: specifier.into(),
-      dom_helper_module: dom_helper_module.into(),
+      runtime_module: runtime_module.into(),
       dep_graph: Vec::new(),
       css: None,
     }
@@ -45,7 +48,7 @@ impl Default for Resolver {
   fn default() -> Self {
     Resolver {
       specifier: "./App.alef".into(),
-      dom_helper_module: "alef-dom".into(),
+      runtime_module: "alef-dom".into(),
       dep_graph: Vec::new(),
       css: None,
     }

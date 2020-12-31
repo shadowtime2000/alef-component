@@ -1,0 +1,27 @@
+[package]
+name = "alef-compiler-wasm"
+version = "0.0.0"
+description = "The AOT Compiler of Alef Component."
+repository = "https://github.com/alephjs/alef-component"
+license = "MIT"
+authors = ["The Aleph.js authors"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["console_error_panic_hook"]
+
+[dependencies]
+alef = { path = "../" }
+serde = { version = "1.0.118", features = ["derive"] }
+
+# wasm-bindgen
+# docs: https://rustwasm.github.io/docs/wasm-bindgen
+wasm-bindgen = {version = "0.2.69", features = ["serde-serialize"]}
+console_error_panic_hook = { version = "0.1.6", optional = true }
+
+[profile.release]
+# Tell `rustc` to optimize for speed
+lto = true

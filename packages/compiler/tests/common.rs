@@ -1,11 +1,11 @@
-use alef_compiler::module::AlefComponentModule;
-use alef_compiler::resolve::Resolver; 
+use alef::compiler::Compiler;
+use alef::resolve::Resolver; 
 use std::{cell::RefCell, rc::Rc};
 
 pub fn t(specifer: &str, source: &str) -> (String, Rc<RefCell<Resolver>>) {
-    let module = AlefComponentModule::parse(specifer, source).expect("could not parse module");
+    let compiler = Compiler::parse(specifer, source).expect("could not parse module");
     let resolver = Rc::new(RefCell::new(Resolver::default()));
-    let (code, _) = module
+    let (code, _) = compiler
         .transpile(resolver.clone())
         .expect("could not transpile module");
     println!("{}", code);
@@ -17,9 +17,9 @@ pub fn t_custom_runtime_module(
     source: &str,
     runtime_module: &str,
 ) -> (String, Rc<RefCell<Resolver>>) {
-    let module = AlefComponentModule::parse(specifer, source).expect("could not parse module");
+    let compiler = Compiler::parse(specifer, source).expect("could not parse module");
     let resolver = Rc::new(RefCell::new(Resolver::new(specifer, runtime_module)));
-    let (code, _) = module
+    let (code, _) = compiler
         .transpile(resolver.clone())
         .expect("could not transpile module");
     println!("{}", code);

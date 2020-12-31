@@ -22,14 +22,14 @@ use swc_ecmascript::{
 };
 
 #[derive(Clone)]
-pub struct AlefComponentModule {
+pub struct Compiler {
   pub specifier: String,
   pub module: Module,
   pub source_map: Rc<SourceMap>,
   pub comments: SingleThreadedComments,
 }
 
-impl AlefComponentModule {
+impl Compiler {
   /// Parse Alef Component to AST.
   pub fn parse(specifier: &str, source: &str) -> Result<Self, anyhow::Error> {
     let source_map = SourceMap::default();
@@ -66,7 +66,7 @@ impl AlefComponentModule {
       })
       .unwrap();
 
-    Ok(AlefComponentModule {
+    Ok(Compiler {
       specifier: specifier.into(),
       module,
       source_map: Rc::new(source_map),

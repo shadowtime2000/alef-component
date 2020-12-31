@@ -30,8 +30,8 @@ impl Fold for ASTransformer {
     let scope_idents = scope_idents.borrow();
     let mut output: Vec<ModuleItem> = vec![];
 
-    // import dom helper module
-    if resolver.dom_helper_module.starts_with("window.") {
+    // import runtime module
+    if resolver.runtime_module.starts_with("window.") {
       let mut props: Vec<ObjectPatProp> = vec![];
       for (name, rename) in scope_idents.helpers.clone() {
         if rename != name {
@@ -61,7 +61,7 @@ impl Fold for ASTransformer {
           }),
           init: Some(Box::new(Expr::MetaProp(MetaPropExpr {
             meta: quote_ident!("window"),
-            prop: quote_ident!(resolver.dom_helper_module.trim_start_matches("window.")),
+            prop: quote_ident!(resolver.runtime_module.trim_start_matches("window.")),
           }))),
           definite: false,
         }],
@@ -88,7 +88,7 @@ impl Fold for ASTransformer {
         specifiers,
         src: Str {
           span: DUMMY_SP,
-          value: resolver.dom_helper_module.as_str().into(),
+          value: resolver.runtime_module.as_str().into(),
           has_escape: false,
           kind: Default::default(),
         },
