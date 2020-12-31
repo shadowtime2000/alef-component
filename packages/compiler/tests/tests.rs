@@ -1,5 +1,3 @@
-// Copyright 2020 the The Alef Component authors. All rights reserved. MIT license.
-
 mod common;
 
 use common::{t, t_custom_runtime_module};
@@ -17,7 +15,7 @@ fn test_component_export() {
   let source = r#"
     let name: string = 'World'
 
-    $t: <p>Hello {name}!</p>    
+    $t: <p>Hello {name}!</p>
   "#;
   let (code, _) = t("App.alef", source);
   assert!(code.contains("import { Component, Element, Memo } from \"alef-dom\";"));

@@ -1,5 +1,3 @@
-// Copyright 2020 the Aleph.js authors. All rights reserved. MIT license.
-
 use alef::compiler::Compiler;
 use alef::resolve::{CSSTemplate, DependencyDescriptor, Resolver, Target};
 use serde::{Deserialize, Serialize};

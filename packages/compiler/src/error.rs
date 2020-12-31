@@ -1,4 +1,4 @@
-// Copyright 2020 the Aleph.js authors. All rights reserved. MIT license.
+// Copyright 2020-2021 postUI Lab. All rights reserved. MIT license.
 
 use std::{fmt, sync::Arc, sync::RwLock};
 use swc_common::{
@@ -33,7 +33,10 @@ impl DiagnosticBuffer {
             FileName::Real(p) => p.display(),
             _ => unreachable!(),
           };
-          message = format!("{} at {}:{}:{}", message, file_name, loc.line, loc.col_display);
+          message = format!(
+            "{} at {}:{}:{}",
+            message, file_name, loc.line, loc.col_display
+          );
         }
 
         message
