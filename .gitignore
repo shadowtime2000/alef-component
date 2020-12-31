@@ -1,4 +1,5 @@
 .DS_Store
 Thumbs.db
-**/compiler/target/
-**/compiler/pkg/
+**/dist/
+**/target/
+**/pkg/
