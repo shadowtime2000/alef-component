@@ -1,4 +1,4 @@
-// Copyright 2020 the The Alef Component authors. All rights reserved. MIT license.
+// Copyright 2020 the Aleph.js authors. All rights reserved. MIT license.
 
 use super::{
   ast::alef_transform,
@@ -125,55 +125,5 @@ impl AlefComponentModule {
       .to_writer(&mut buf)
       .unwrap();
     Ok((src, Some(String::from_utf8(buf).unwrap())))
-  }
-}
-
-#[cfg(test)]
-mod tests {
-  use super::*;
-  use crate::resolve::Resolver;
-
-  fn t(specifer: &str, source: &str) -> (String, Rc<RefCell<Resolver>>) {
-    let module = AlefComponentModule::parse(specifer, source).expect("could not parse module");
-    let resolver = Rc::new(RefCell::new(Resolver::default()));
-    let (code, _) = module
-      .transpile(resolver.clone())
-      .expect("could not transpile module");
-    println!("{}", code);
-    (code, resolver)
-  }
-
-  fn t2(specifer: &str, source: &str, dom_helper_module: &str) -> (String, Rc<RefCell<Resolver>>) {
-    let module = AlefComponentModule::parse(specifer, source).expect("could not parse module");
-    let resolver = Rc::new(RefCell::new(Resolver::new(specifer, dom_helper_module)));
-    let (code, _) = module
-      .transpile(resolver.clone())
-      .expect("could not transpile module");
-    println!("{}", code);
-    (code, resolver)
-  }
-
-  #[test]
-  fn test_dom_helper_module() {
-    let (code, _) = t2("./App.alef", "", "https://deno.land/x/alef/dom.ts");
-    assert!(code.contains(" from \"https://deno.land/x/alef/dom.ts\";"));
-    let (code, _) = t2("./App.alef", "", "window.__ALEF_DOM");
-    assert!(code.contains("} = window.__ALEF_DOM;"));
-  }
-
-  #[test]
-  fn test_component_export() {
-    let source = r#"
-      let name: string = 'World'
-
-      $t: <p>Hello {name}!</p>    
-    "#;
-    let (code, _) = t("App.alef", source);
-    assert!(code.contains("import { Component, Element, Memo } from \"alef-dom\";"));
-    assert!(code.contains("export default class App extends Component"));
-    assert!(code.contains("constructor(props)"));
-    assert!(code.contains("super(props)"));
-    assert!(code.contains("const nodes = ["));
-    assert!(code.contains("this.register(nodes)"));
   }
 }
