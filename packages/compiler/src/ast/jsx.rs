@@ -67,7 +67,6 @@ impl JSXTransformer {
                 if s.value.is_empty() {
                     return None;
                 }
-
                 Lit::Str(s).as_arg()
             }
             JSXElementChild::JSXElement(el) => self.transform_element(*el).as_arg(),
@@ -75,7 +74,7 @@ impl JSXTransformer {
             JSXElementChild::JSXExprContainer(JSXExprContainer {
                 expr: JSXExpr::Expr(e),
                 ..
-            }) => self.transform_expr(*e).as_arg(),
+            }) => self.transform_expr(*e, false).as_arg(),
             JSXElementChild::JSXExprContainer(JSXExprContainer {
                 expr: JSXExpr::JSXEmptyExpr(..),
                 ..
@@ -141,8 +140,8 @@ impl JSXTransformer {
                     .map(|v| match v {
                         Prop::KeyValue(KeyValueProp { key, value }) => {
                             Prop::KeyValue(KeyValueProp {
-                                key,
-                                value: Box::new(self.transform_expr(*value)),
+                                key: key.clone(),
+                                value: Box::new(self.transform_expr(*value, is_event_prop(key))),
                             })
                         }
                         _ => v,
@@ -154,34 +153,38 @@ impl JSXTransformer {
         }
     }
 
-    fn transform_expr(&self, expr: Expr) -> Expr {
+    fn transform_expr(&self, expr: Expr, is_event: bool) -> Expr {
         let mut deps: Vec<usize> = vec![];
         let expr = self.convert_expr(expr, &mut deps);
         if deps.len() > 0 {
-            let memo_ident = self.create_ident("Memo");
+            let call_ident = self.create_ident(if is_event { "Dirty" } else { "Memo" });
             return Expr::Call(CallExpr {
                 span: DUMMY_SP,
-                callee: ExprOrSuper::Expr(Box::new(Expr::Ident(memo_ident))),
-                args: iter::once(expr.as_arg())
-                    .chain(iter::once(
-                        Expr::Array(ArrayLit {
-                            span: DUMMY_SP,
-                            elems: deps
-                                .into_iter()
-                                .map(|dep| {
-                                    Some(ExprOrSpread {
-                                        spread: None,
-                                        expr: Box::new(Expr::Lit(Lit::Num(Number {
-                                            span: DUMMY_SP,
-                                            value: dep as f64,
-                                        }))),
-                                    })
+                callee: ExprOrSuper::Expr(Box::new(Expr::Ident(call_ident))),
+                args: iter::once(if is_event {
+                    expr.as_arg()
+                } else {
+                    expr_to_arrow(expr).as_arg()
+                })
+                .chain(iter::once(
+                    Expr::Array(ArrayLit {
+                        span: DUMMY_SP,
+                        elems: deps
+                            .into_iter()
+                            .map(|dep| {
+                                Some(ExprOrSpread {
+                                    spread: None,
+                                    expr: Box::new(Expr::Lit(Lit::Num(Number {
+                                        span: DUMMY_SP,
+                                        value: dep as f64,
+                                    }))),
                                 })
-                                .collect(),
-                        })
-                        .as_arg(),
-                    ))
-                    .collect(),
+                            })
+                            .collect(),
+                    })
+                    .as_arg(),
+                ))
+                .collect(),
                 type_args: Default::default(),
             });
         }
@@ -198,11 +201,97 @@ impl JSXTransformer {
                 }
                 Expr::Ident(id)
             }
+            Expr::Update(UpdateExpr {
+                op, prefix, arg, ..
+            }) => Expr::Update(UpdateExpr {
+                span: DUMMY_SP,
+                op,
+                prefix,
+                arg: Box::new(self.convert_expr(*arg, deps)),
+            }),
             Expr::Paren(ParenExpr {
                 expr: inner_expr, ..
             }) => Expr::Paren(ParenExpr {
                 span: DUMMY_SP,
                 expr: Box::new(self.convert_expr(*inner_expr, deps)),
+            }),
+            Expr::Fn(FnExpr {
+                ident,
+                function:
+                    Function {
+                        params,
+                        decorators,
+                        body,
+                        is_async,
+                        is_generator,
+                        type_params,
+                        return_type,
+                        ..
+                    },
+            }) => Expr::Fn(FnExpr {
+                ident,
+                function: Function {
+                    span: DUMMY_SP,
+                    params,
+                    decorators,
+                    body: if let Some(BlockStmt { stmts, .. }) = body {
+                        Some(BlockStmt {
+                            span: DUMMY_SP,
+                            stmts: stmts
+                                .into_iter()
+                                .map(|stmt| match stmt {
+                                    Stmt::Expr(ExprStmt { expr, .. }) => Stmt::Expr(ExprStmt {
+                                        span: DUMMY_SP,
+                                        expr: Box::new(self.convert_expr(*expr, deps)),
+                                    }),
+                                    _ => stmt,
+                                })
+                                .collect(),
+                        })
+                    } else {
+                        None
+                    },
+                    is_async,
+                    is_generator,
+                    type_params,
+                    return_type,
+                },
+            }),
+            Expr::Arrow(ArrowExpr {
+                params,
+                body,
+                is_async,
+                is_generator,
+                type_params,
+                return_type,
+                ..
+            }) => Expr::Arrow(ArrowExpr {
+                span: DUMMY_SP,
+                params,
+                body: match body {
+                    BlockStmtOrExpr::BlockStmt(BlockStmt { stmts, .. }) => {
+                        BlockStmtOrExpr::BlockStmt(BlockStmt {
+                            span: DUMMY_SP,
+                            stmts: stmts
+                                .into_iter()
+                                .map(|stmt| match stmt {
+                                    Stmt::Expr(ExprStmt { expr, .. }) => Stmt::Expr(ExprStmt {
+                                        span: DUMMY_SP,
+                                        expr: Box::new(self.convert_expr(*expr, deps)),
+                                    }),
+                                    _ => stmt,
+                                })
+                                .collect(),
+                        })
+                    }
+                    BlockStmtOrExpr::Expr(expr) => {
+                        BlockStmtOrExpr::Expr(Box::new(self.convert_expr(*expr, deps)))
+                    }
+                },
+                is_async,
+                is_generator,
+                type_params,
+                return_type,
             }),
             _ => expr,
         }
@@ -360,4 +449,63 @@ fn jsx_text_to_string(t: &str) -> String {
     }
 
     buf.into()
+}
+
+fn expr_to_arrow(expr: Expr) -> Expr {
+    Expr::Arrow(ArrowExpr {
+        span: DUMMY_SP,
+        params: vec![],
+        body: BlockStmtOrExpr::Expr(Box::new(expr)),
+        is_async: false,
+        is_generator: false,
+        type_params: None,
+        return_type: None,
+    })
+}
+
+fn is_event_prop(name: PropName) -> bool {
+    match name {
+        PropName::Str(Str { value, .. }) => is_event_prop_name(value.as_ref()),
+        PropName::Ident(Ident { sym, .. }) => is_event_prop_name(sym.as_ref()),
+        _ => false,
+    }
+}
+
+fn is_event_prop_name(name: &str) -> bool {
+    let mut chars = name.chars();
+    if let (Some(c0), Some(c1), Some(c2)) = (chars.next(), chars.next(), chars.next()) {
+        return c0 == 'o' && c1 == 'n' && c2 >= 'A' && c2 <= 'Z';
+    }
+    return false;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn new_str(value: &str) -> Str {
+        Str {
+            span: DUMMY_SP,
+            value: value.into(),
+            has_escape: false,
+            kind: Default::default(),
+        }
+    }
+
+    fn new_ident(id: &str) -> Ident {
+        Ident {
+            span: DUMMY_SP,
+            sym: id.into(),
+            type_ann: None,
+            optional: false,
+        }
+    }
+
+    #[test]
+    fn test_is_event_prop() {
+        assert_eq!(is_event_prop(PropName::Str(new_str("onClick"))), true);
+        assert_eq!(is_event_prop(PropName::Str(new_str("onclick"))), false);
+        assert_eq!(is_event_prop(PropName::Ident(new_ident("onClick"))), true);
+        assert_eq!(is_event_prop(PropName::Ident(new_ident("onclick"))), false);
+    }
 }
