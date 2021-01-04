@@ -74,6 +74,9 @@ impl IdentMap {
             | "Effect" | "Dirty" | "nope" => true,
             _ => false,
         };
+        if is_helper && self.helpers.contains_key(name.into()) {
+            return quote_ident!(self.helpers.get(name.into()).unwrap().clone());
+        }
         let mut idx = 0;
         if self.scopes.contains(name) {
             idx = 1;
