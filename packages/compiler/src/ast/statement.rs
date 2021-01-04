@@ -38,6 +38,7 @@ pub struct ConstStatement {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FCStatement {
+    pub name: Ident,
     pub scope_idents: IdentMap,
     pub statements: Vec<Statement>,
 }

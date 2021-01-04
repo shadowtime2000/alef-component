@@ -214,6 +214,7 @@ impl StatementsTransformer {
           ConstTyped::Context => {}
         },
         Statement::FC(FCStatement {
+          name,
           scope_idents,
           statements,
         }) => {}
@@ -231,7 +232,7 @@ impl StatementsTransformer {
         },
         Statement::Style(StyleStatement { css }) => {}
         Statement::Export(ExportStatement { expr }) => export_default = Some(expr),
-        _ => {}
+        Statement::Stmt(stmt) => stmts.push(stmt),
       }
     }
 

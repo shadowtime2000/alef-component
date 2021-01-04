@@ -74,67 +74,75 @@ impl ASTWalker {
                     }
                     "Memo" => typed = ConstTyped::Memo,
                     "FC" => {
-                      if let Some(init) = &decl.init {
-                        match init.as_ref() {
-                          Expr::Arrow(ArrowExpr { body, .. }) => match body {
-                            BlockStmtOrExpr::BlockStmt(block_stmt) => {
-                              let mut fc_walker = Self::new();
-                              let mut fc_stmts: Vec<Statement> = vec![];
-                              for stmt in &block_stmt.stmts {
-                                fc_stmts = [fc_stmts, fc_walker.transform_stmt(stmt)].concat()
-                              }
-                              for dep in fc_walker.dep_graph {
-                                self.dep_graph.push(dep)
-                              }
-                              self.scope_idents.mark(&decl.name);
-                              stmts.push(Statement::FC(FCStatement {
-                                scope_idents: fc_walker.scope_idents,
-                                statements: fc_stmts,
-                              }));
-                              continue;
-                            }
-                            BlockStmtOrExpr::Expr(expr) => {
-                              let mut fc_walker = Self::new();
-                              let statements = fc_walker.transform_stmt(&Stmt::Expr(ExprStmt {
-                                span: DUMMY_SP,
-                                expr: expr.clone(),
-                              }));
-                              for dep in fc_walker.dep_graph {
-                                self.dep_graph.push(dep)
-                              }
-                              self.scope_idents.mark(&decl.name);
-                              stmts.push(Statement::FC(FCStatement {
-                                scope_idents: fc_walker.scope_idents,
-                                statements,
-                              }));
-                              continue;
-                            }
-                          },
-                          Expr::Fn(FnExpr {
-                            function:
-                              Function {
-                                body: Some(body),
-                                is_generator: false,
-                                ..
+                      if let Pat::Ident(name) = &decl.name {
+                        if name.sym.chars().next().unwrap().is_ascii_uppercase() {
+                          if let Some(init) = &decl.init {
+                            match init.as_ref() {
+                              Expr::Arrow(ArrowExpr { body, .. }) => match body {
+                                BlockStmtOrExpr::BlockStmt(block_stmt) => {
+                                  let mut fc_walker = Self::new();
+                                  let mut fc_stmts: Vec<Statement> = vec![];
+                                  for stmt in &block_stmt.stmts {
+                                    fc_stmts = [fc_stmts, fc_walker.transform_stmt(stmt)].concat()
+                                  }
+                                  for dep in fc_walker.dep_graph {
+                                    self.dep_graph.push(dep)
+                                  }
+                                  self.scope_idents.mark(&decl.name);
+                                  stmts.push(Statement::FC(FCStatement {
+                                    name: name.clone(),
+                                    scope_idents: fc_walker.scope_idents,
+                                    statements: fc_stmts,
+                                  }));
+                                  continue;
+                                }
+                                BlockStmtOrExpr::Expr(expr) => {
+                                  let mut fc_walker = Self::new();
+                                  let statements =
+                                    fc_walker.transform_stmt(&Stmt::Expr(ExprStmt {
+                                      span: DUMMY_SP,
+                                      expr: expr.clone(),
+                                    }));
+                                  for dep in fc_walker.dep_graph {
+                                    self.dep_graph.push(dep)
+                                  }
+                                  self.scope_idents.mark(&decl.name);
+                                  stmts.push(Statement::FC(FCStatement {
+                                    name: name.clone(),
+                                    scope_idents: fc_walker.scope_idents,
+                                    statements,
+                                  }));
+                                  continue;
+                                }
                               },
-                            ..
-                          }) => {
-                            let mut fc_walker = Self::new();
-                            let mut fc_stmts: Vec<Statement> = vec![];
-                            for stmt in &body.stmts {
-                              fc_stmts = [fc_stmts, fc_walker.transform_stmt(stmt)].concat()
+                              Expr::Fn(FnExpr {
+                                function:
+                                  Function {
+                                    body: Some(body),
+                                    is_generator: false,
+                                    ..
+                                  },
+                                ..
+                              }) => {
+                                let mut fc_walker = Self::new();
+                                let mut fc_stmts: Vec<Statement> = vec![];
+                                for stmt in &body.stmts {
+                                  fc_stmts = [fc_stmts, fc_walker.transform_stmt(stmt)].concat()
+                                }
+                                for dep in fc_walker.dep_graph {
+                                  self.dep_graph.push(dep)
+                                }
+                                self.scope_idents.mark(&decl.name);
+                                stmts.push(Statement::FC(FCStatement {
+                                  name: name.clone(),
+                                  scope_idents: fc_walker.scope_idents,
+                                  statements: fc_stmts,
+                                }));
+                                continue;
+                              }
+                              _ => {}
                             }
-                            for dep in fc_walker.dep_graph {
-                              self.dep_graph.push(dep)
-                            }
-                            self.scope_idents.mark(&decl.name);
-                            stmts.push(Statement::FC(FCStatement {
-                              scope_idents: fc_walker.scope_idents,
-                              statements: fc_stmts,
-                            }));
-                            continue;
                           }
-                          _ => {}
                         }
                       }
                     }
@@ -204,6 +212,15 @@ impl ASTWalker {
           }
         }
       },
+      Stmt::Expr(ExprStmt { expr, .. }) => {
+        if let Expr::Fn(FnExpr {
+          ident: Some(ident), ..
+        }) = expr.as_ref()
+        {
+          self.scope_idents.mark(&Pat::Ident(ident.clone()));
+        }
+        stmts.push(Statement::Stmt(stmt.clone()));
+      }
       Stmt::Labeled(labeled) => match labeled.label.as_ref() {
         "$" => stmts.push(Statement::SideEffect(SideEffectStatement {
           name: None,

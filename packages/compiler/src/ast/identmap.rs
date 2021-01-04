@@ -103,6 +103,256 @@ impl IdentMap {
             quote_ident!(name)
         }
     }
+
+    pub fn convert_memo_expr(&self, expr: Expr, deps: &mut Vec<usize>) -> Expr {
+        match expr {
+            Expr::Ident(id) => {
+                if let Some(dep) = self.states.get_index_of(id.sym.as_ref().into()) {
+                    deps.push(dep);
+                }
+                Expr::Ident(id)
+            }
+            Expr::Update(UpdateExpr {
+                span,
+                op,
+                prefix,
+                arg,
+            }) => Expr::Update(UpdateExpr {
+                span,
+                op,
+                prefix,
+                arg: Box::new(self.convert_dirty_expr(*arg, deps)),
+            }),
+            Expr::Assign(AssignExpr {
+                span,
+                op,
+                left,
+                right,
+            }) => Expr::Assign(AssignExpr {
+                span,
+                op,
+                left,
+                right: Box::new(self.convert_dirty_expr(*right, deps)),
+            }),
+            Expr::Paren(ParenExpr {
+                span,
+                expr: inner_expr,
+            }) => Expr::Paren(ParenExpr {
+                span,
+                expr: Box::new(self.convert_memo_expr(*inner_expr, deps)),
+            }),
+            Expr::Fn(FnExpr {
+                ident,
+                function:
+                    Function {
+                        span,
+                        params,
+                        decorators,
+                        body,
+                        is_async,
+                        is_generator,
+                        type_params,
+                        return_type,
+                    },
+            }) => Expr::Fn(FnExpr {
+                ident,
+                function: Function {
+                    span,
+                    params,
+                    decorators,
+                    body: if let Some(BlockStmt { span, stmts }) = body {
+                        Some(BlockStmt {
+                            span,
+                            stmts: stmts
+                                .into_iter()
+                                .map(|stmt| match stmt {
+                                    Stmt::Expr(ExprStmt { span, expr }) => Stmt::Expr(ExprStmt {
+                                        span,
+                                        expr: Box::new(self.convert_memo_expr(*expr, deps)),
+                                    }),
+                                    _ => stmt,
+                                })
+                                .collect(),
+                        })
+                    } else {
+                        None
+                    },
+                    is_async,
+                    is_generator,
+                    type_params,
+                    return_type,
+                },
+            }),
+            Expr::Arrow(ArrowExpr {
+                span,
+                params,
+                body,
+                is_async,
+                is_generator,
+                type_params,
+                return_type,
+                ..
+            }) => Expr::Arrow(ArrowExpr {
+                span,
+                params,
+                body: match body {
+                    BlockStmtOrExpr::BlockStmt(BlockStmt { span, stmts }) => {
+                        BlockStmtOrExpr::BlockStmt(BlockStmt {
+                            span,
+                            stmts: stmts
+                                .into_iter()
+                                .map(|stmt| match stmt {
+                                    Stmt::Expr(ExprStmt { span, expr }) => Stmt::Expr(ExprStmt {
+                                        span,
+                                        expr: Box::new(self.convert_memo_expr(*expr, deps)),
+                                    }),
+                                    _ => stmt,
+                                })
+                                .collect(),
+                        })
+                    }
+                    BlockStmtOrExpr::Expr(expr) => {
+                        BlockStmtOrExpr::Expr(Box::new(self.convert_memo_expr(*expr, deps)))
+                    }
+                },
+                is_async,
+                is_generator,
+                type_params,
+                return_type,
+            }),
+            _ => expr,
+        }
+    }
+
+    pub fn convert_dirty_expr(&self, expr: Expr, deps: &mut Vec<usize>) -> Expr {
+        match expr {
+            Expr::Update(UpdateExpr {
+                span,
+                op,
+                prefix,
+                arg,
+            }) => {
+                if let Expr::Ident(id) = arg.as_ref() {
+                    if let Some(dep) = self.states.get_index_of(id.sym.as_ref().into()) {
+                        deps.push(dep);
+                    }
+                }
+                Expr::Update(UpdateExpr {
+                    span,
+                    op,
+                    prefix,
+                    arg: Box::new(self.convert_dirty_expr(*arg, deps)),
+                })
+            }
+            Expr::Assign(AssignExpr {
+                span,
+                op,
+                left,
+                right,
+            }) => {
+                if let PatOrExpr::Pat(pat) = left.clone() {
+                    for id in get_idents_from_pat(&pat) {
+                        if let Some(dep) = self.states.get_index_of(id.sym.as_ref().into()) {
+                            deps.push(dep);
+                        }
+                    }
+                }
+                Expr::Assign(AssignExpr {
+                    span,
+                    op,
+                    left,
+                    right: Box::new(self.convert_dirty_expr(*right, deps)),
+                })
+            }
+            Expr::Paren(ParenExpr {
+                span,
+                expr: inner_expr,
+            }) => Expr::Paren(ParenExpr {
+                span,
+                expr: Box::new(self.convert_dirty_expr(*inner_expr, deps)),
+            }),
+            Expr::Fn(FnExpr {
+                ident,
+                function:
+                    Function {
+                        span,
+                        params,
+                        decorators,
+                        body,
+                        is_async,
+                        is_generator,
+                        type_params,
+                        return_type,
+                    },
+            }) => Expr::Fn(FnExpr {
+                ident,
+                function: Function {
+                    span,
+                    params,
+                    decorators,
+                    body: if let Some(BlockStmt { span, stmts }) = body {
+                        Some(BlockStmt {
+                            span,
+                            stmts: stmts
+                                .into_iter()
+                                .map(|stmt| match stmt {
+                                    Stmt::Expr(ExprStmt { span, expr }) => Stmt::Expr(ExprStmt {
+                                        span,
+                                        expr: Box::new(self.convert_dirty_expr(*expr, deps)),
+                                    }),
+                                    _ => stmt,
+                                })
+                                .collect(),
+                        })
+                    } else {
+                        None
+                    },
+                    is_async,
+                    is_generator,
+                    type_params,
+                    return_type,
+                },
+            }),
+            Expr::Arrow(ArrowExpr {
+                span,
+                params,
+                body,
+                is_async,
+                is_generator,
+                type_params,
+                return_type,
+                ..
+            }) => Expr::Arrow(ArrowExpr {
+                span,
+                params,
+                body: match body {
+                    BlockStmtOrExpr::BlockStmt(BlockStmt { span, stmts }) => {
+                        BlockStmtOrExpr::BlockStmt(BlockStmt {
+                            span,
+                            stmts: stmts
+                                .into_iter()
+                                .map(|stmt| match stmt {
+                                    Stmt::Expr(ExprStmt { span, expr }) => Stmt::Expr(ExprStmt {
+                                        span,
+                                        expr: Box::new(self.convert_dirty_expr(*expr, deps)),
+                                    }),
+                                    _ => stmt,
+                                })
+                                .collect(),
+                        })
+                    }
+                    BlockStmtOrExpr::Expr(expr) => {
+                        BlockStmtOrExpr::Expr(Box::new(self.convert_dirty_expr(*expr, deps)))
+                    }
+                },
+                is_async,
+                is_generator,
+                type_params,
+                return_type,
+            }),
+            _ => expr,
+        }
+    }
 }
 
 impl Default for IdentMap {
