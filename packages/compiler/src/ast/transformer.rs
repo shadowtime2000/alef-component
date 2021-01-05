@@ -2,10 +2,10 @@
 
 use super::{identmap::IdentMap, jsx::JSXTransformer, statement::*, walker::ASTWalker};
 use crate::resolve::{to_component_name, Resolver};
-use std::{cell::RefCell, path::Path, rc::Rc};
+use std::{cell::RefCell, iter, path::Path, rc::Rc};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::*;
-use swc_ecma_utils::quote_ident;
+use swc_ecma_utils::{quote_ident, ExprFactory};
 use swc_ecma_visit::{noop_fold_type, Fold};
 
 /// AST Transformer for Alef Component.
@@ -232,7 +232,67 @@ impl StatementsTransformer {
         },
         Statement::Style(StyleStatement { css }) => {}
         Statement::Export(ExportStatement { expr }) => export_default = Some(expr),
-        Statement::Stmt(stmt) => stmts.push(stmt),
+        Statement::Stmt(stmt) => match stmt {
+          Stmt::Decl(Decl::Fn(FnDecl {
+            ident,
+            declare,
+            function,
+          })) => {
+            let fe = Expr::Fn(FnExpr {
+              ident: Some(ident.clone()),
+              function: function.clone(),
+            });
+            let mut deps: Vec<usize> = vec![];
+            let mut scope_idents = RefCell::borrow_mut(&self.scope_idents);
+            scope_idents.convert_dirty_expr(fe.clone(), &mut deps);
+            if deps.len() > 0 {
+              stmts.push(Stmt::Decl(Decl::Var(VarDecl {
+                span: DUMMY_SP,
+                kind: VarDeclKind::Const,
+                declare: false,
+                decls: vec![VarDeclarator {
+                  span: DUMMY_SP,
+                  name: Pat::Ident(ident),
+                  init: Some(Box::new(Expr::Call(CallExpr {
+                    span: DUMMY_SP,
+                    callee: ExprOrSuper::Expr(Box::new(Expr::Ident(
+                      scope_idents.create_ident("Dirty"),
+                    ))),
+                    args: iter::once(fe.as_arg())
+                      .chain(iter::once(
+                        Expr::Array(ArrayLit {
+                          span: DUMMY_SP,
+                          elems: deps
+                            .into_iter()
+                            .map(|dep| {
+                              Some(ExprOrSpread {
+                                spread: None,
+                                expr: Box::new(Expr::Lit(Lit::Num(Number {
+                                  span: DUMMY_SP,
+                                  value: dep as f64,
+                                }))),
+                              })
+                            })
+                            .collect(),
+                        })
+                        .as_arg(),
+                      ))
+                      .collect(),
+                    type_args: Default::default(),
+                  }))),
+                  definite: false,
+                }],
+              })))
+            } else {
+              stmts.push(Stmt::Decl(Decl::Fn(FnDecl {
+                ident,
+                declare,
+                function,
+              })))
+            }
+          }
+          _ => stmts.push(stmt),
+        },
       }
     }
 
