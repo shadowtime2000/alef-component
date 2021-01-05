@@ -54,13 +54,12 @@ fn test_component_dirty() {
     $t: <button onClick={increase}>+</button>
   "#;
   let (code, _) = t("App.alef", source);
-  assert!(code.contains("import { Component, Element, Dirty } from \"alef-dom\";"));
-  assert!(code.contains("Element(\"button\", {"));
-
-  let r =
+  let r1 =
     Regex::new(r"onClick:\s*Dirty\(\(e\)\s*=>\s*\{\s*n--;?\s*\}\s*,\s*\[\s*0\s*\]\s*\)").unwrap();
-  assert!(r.is_match(code.as_str()));
-
-  let r = Regex::new(r"const increase = Dirty\(function increase\(\) \{\}, \[0\]\)").unwrap();
-  assert!(r.is_match(code.as_str()));
+  let r2 = Regex::new(
+    r"const increase\s*=\s*Dirty\(function increase\(\)\s*\{\s*n\+\+;?\s*\},\s*\[\s*0\s*\]\s*\)",
+  )
+  .unwrap();
+  assert!(r1.is_match(code.as_str()));
+  assert!(r2.is_match(code.as_str()));
 }
